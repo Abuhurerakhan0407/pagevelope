@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "campaign_demo_launch",
+  "name": "Orbit Bottle Launch",
+  "locale": "en-IN",
+  "subject": "Meet Orbit — hydration without the bulk",
+  "preheader": "A lighter bottle, built for everyday carry.",
+  "brand": {
+    "name": "Northstar Goods",
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "colors": {
+      "background": "#F5F3EE",
+      "surface": "#FFFFFF",
+      "text": "#171717",
+      "muted": "#6B7280",
+      "primary": "#6F5CFB"
+    }
+  },
+  "blocks": [
+    { "id": "pre", "type": "preheader", "text": "A lighter bottle, built for everyday carry." },
+    { "id": "header", "type": "header", "wordmark": "NORTHSTAR", "homeUrl": "https://example.com" },
+    {
+      "id": "hero",
+      "type": "hero",
+      "eyebrow": "New product",
+      "heading": "Hydration, minus the bulk.",
+      "body": "Orbit keeps a full day of water close without taking over your bag.",
+      "image": { "src": "https://images.example.com/orbit.jpg", "alt": "Orbit insulated bottle", "width": 520 },
+      "cta": { "label": "Shop Orbit", "href": "https://example.com/products/orbit" },
+      "align": "left",
+      "backgroundColor": "#EDE9FE"
+    },
+    { "id": "copy", "type": "text", "heading": "Designed for the daily carry", "body": "Slim profile. Leak-resistant cap. Cold for hours." },
+    {
+      "id": "products",
+      "type": "product-grid",
+      "heading": "Choose your finish",
+      "columns": 2,
+      "products": [
+        { "id": "p1", "title": "Orbit / Lilac", "price": "₹2,499", "image": { "src": "https://images.example.com/orbit-lilac.jpg", "alt": "Lilac Orbit bottle" }, "href": "https://example.com/products/orbit-lilac" },
+        { "id": "p2", "title": "Orbit / Ink", "price": "₹2,499", "image": { "src": "https://images.example.com/orbit-ink.jpg", "alt": "Ink Orbit bottle" }, "href": "https://example.com/products/orbit-ink" }
+      ]
+    },
+    { "id": "footer", "type": "footer", "companyName": "Northstar Goods", "physicalAddress": "12 Market Road, Mumbai, Maharashtra 400001, India", "websiteUrl": "https://example.com", "privacyUrl": "https://example.com/privacy" }
+  ]
+}
