@@ -31,10 +31,18 @@ test("release bundle contains canonical source, MJML, HTML, text and manifest", 
   release.manifest.files.forEach((file) => assert.equal(file.sha256.length, 64));
 });
 
-test("release fails closed when QA has a blocking issue", async () => {
+test("release records non-blocking QA warnings", async () => {
+  const warned = JSON.parse(JSON.stringify(fixture));
+  warned.subject = "A deliberately long Pagevelope subject line that safely crosses the seventy character warning threshold";
+  const release = await renderCampaignRelease(warned);
+  assert.equal(release.manifest.qa.status, "WARN");
+  assert.ok(release.manifest.qa.issues.some((issue) => issue.code === "SUBJECT_LONG"));
+});
+
+test("release fails closed on structurally invalid source", async () => {
   const broken = JSON.parse(JSON.stringify(fixture));
   broken.blocks = broken.blocks.filter((block) => block.type !== "footer");
-  await assert.rejects(() => renderCampaignRelease(broken), /Release blocked by QA: FOOTER_MISSING/);
+  await assert.rejects(() => renderCampaignRelease(broken), /Invalid campaign document: blocks: Exactly one footer block is required/);
 });
 
 test("strict MJML compiler rejects invalid components", async () => {
