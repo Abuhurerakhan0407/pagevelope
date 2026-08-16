@@ -28,7 +28,7 @@ alter table public.brands
   add constraint brands_logo_asset_workspace_fk
     foreign key (workspace_id, logo_asset_id)
     references public.assets(workspace_id, id)
-    on delete set null;
+    on delete set null (logo_asset_id);
 
 create index brands_logo_asset_idx on public.brands(workspace_id, logo_asset_id)
 where logo_asset_id is not null;
