@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const migration = readFileSync(new URL("../../supabase/migrations/20260816231500_delivery_assets.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../supabase/migrations/20260816232000_delivery_assets.sql", import.meta.url), "utf8");
 const uploader = readFileSync(new URL("../../apps/web/lib/assets/delivery.ts", import.meta.url), "utf8");
 
 test("delivery assets use a public content-addressed bucket with tenant-scoped writes", () => {
