@@ -33,7 +33,12 @@ export async function POST(request: Request, context: RouteContext) {
 
   const workspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
   const expectedVersion = body.expectedVersion;
-  if (!workspaceId || !Number.isInteger(expectedVersion) || Number(expectedVersion) < 0) {
+  if (
+    !workspaceId ||
+    typeof expectedVersion !== "number" ||
+    !Number.isInteger(expectedVersion) ||
+    expectedVersion < 0
+  ) {
     return NextResponse.json({ error: "workspaceId and a non-negative expectedVersion are required." }, { status: 400 });
   }
 
@@ -58,7 +63,7 @@ export async function POST(request: Request, context: RouteContext) {
   const { data, error } = await supabase.rpc("save_campaign_version", {
     target_workspace_id: workspaceId,
     target_campaign_id: campaignId,
-    expected_current_version: Number(expectedVersion),
+    expected_current_version: expectedVersion,
     source_json: validation.data,
     source_sha256: sourceSha256,
   });
