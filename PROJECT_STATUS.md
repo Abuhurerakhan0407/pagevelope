@@ -4,39 +4,44 @@ Updated: 16 August 2026
 
 ## Active phase
 
-Phase 0 — repository foundation, CI, preview deployment, and execution safety.
+Production email engine hardening — deterministic renderer, release bundle, and compatibility fixtures.
 
-## Completed
+## Phase 0 — CLOSED
 
 - Product promise and first ICP locked.
 - Core stack and AI/tool ownership locked.
-- GitHub repository `Abuhurerakhan0407/pagevelope` created and connected.
-- Next.js application shell committed.
-- Versioned campaign schema and runtime validation committed.
-- Controlled campaign-to-MJML mapper committed.
-- Plain-text renderer and initial preflight QA committed.
-- Deterministic renderer manifest and four core safety tests committed.
-- GitHub Actions CI created.
-- Clean GitHub Actions dependency installation succeeded.
-- Lint passed in GitHub Actions.
-- Full typecheck passed in GitHub Actions.
-- Core renderer tests passed in GitHub Actions.
-- Next.js production build passed in GitHub Actions.
-- Vercel project created with root directory `apps/web`.
-- Vercel production deployment is Ready on commit `7c5b087`.
-- The Vercel build blocker caused by missing workspace-local TypeScript/React type dependencies was fixed.
+- GitHub repository `Abuhurerakhan0407/pagevelope` connected.
+- Canonical `package-lock.json` committed.
+- GitHub Actions uses locked `npm ci` installs.
+- CI passes dependency audit, lint, typecheck, tests, and production build.
+- Vercel project is connected with root directory `apps/web`.
+- Live browser smoke test passed.
+- Production secrets remain unavailable to coding agents.
+- Software Factory remains disabled for production orchestration.
+
+## Production renderer milestone — v1 merged
+
+- MJML compiler pinned to `5.4.0`.
+- Controlled MJML compiles under strict validation.
+- Campaign source is validated before release.
+- Blocking QA prevents release.
+- Release bundle contains canonical source JSON, MJML, compiled HTML, plain text, and a manifest.
+- Release manifest records SHA-256 fingerprints and compiler metadata.
+- Renderer determinism and fail-closed behavior are covered by tests.
+- High-severity production dependency audit is now a permanent CI gate.
+- Vulnerable transitive PostCSS and sharp releases used by the current stable Next.js package are overridden to patched versions and verified by CI.
+- PR #2 merged as commit `4034045` and Vercel reported success.
 
 ## Current gate
 
-Phase 0 is not closed yet.
+Before moving into broad backend work:
 
-Remaining:
+- expand the deterministic fixture suite toward the 20-fixture renderer gate;
+- add production HTML normalization/sanitization assertions;
+- prove images-off essential-content behavior;
+- prove legal/unsubscribe requirements across fixtures;
+- keep manual-repair target below 10% once real pilot emails are tested.
 
-- commit the generated `package-lock.json`;
-- run browser smoke test against the live deployment;
-- keep production secrets unavailable to coding agents;
-- keep Software Factory disabled for production orchestration.
+## Next platform milestone
 
-## First product milestone after Phase 0
-
-Replace the renderer spike boundary with the pinned production MJML compiler and deterministic campaign release bundle before broad backend work.
+After the renderer gate is credible, build the Supabase SaaS foundation: authentication, organizations/workspaces, roles, tenant-isolated RLS, private originals, and audit events. Database migrations may be authored and tested by agents but production application remains human-controlled.
