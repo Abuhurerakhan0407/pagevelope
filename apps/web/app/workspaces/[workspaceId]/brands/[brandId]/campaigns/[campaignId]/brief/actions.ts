@@ -265,28 +265,21 @@ export async function selectCreativeDirection(
   const source = directionDocument(campaign, brand, directionKey);
   const validation = validateCampaignDocument(source);
   if (!validation.success || !validation.data) {
-    redirect(`${path}?error=direction-seed-failed`);
+    redirect(`${path}?error=direction-save-failed`);
   }
-
-  const { error: directionError } = await supabase.rpc("select_campaign_direction", {
-    target_workspace_id: workspaceId,
-    target_campaign_id: campaignId,
-    direction_key: directionKey,
-  });
-
-  if (directionError) redirect(`${path}?error=direction-save-failed`);
 
   const canonicalSource = stableStringify(validation.data);
   const sourceSha256 = createHash("sha256").update(canonicalSource, "utf8").digest("hex");
-  const { error: versionError } = await supabase.rpc("save_campaign_version", {
+  const { error: seedError } = await supabase.rpc("select_campaign_direction_and_seed", {
     target_workspace_id: workspaceId,
     target_campaign_id: campaignId,
+    direction_key: directionKey,
     expected_current_version: campaign.current_version_number,
     source_json: validation.data,
     source_sha256: sourceSha256,
   });
 
-  if (versionError) redirect(`${path}?error=direction-seed-failed`);
+  if (seedError) redirect(`${path}?error=direction-save-failed`);
 
   revalidatePath(path);
   revalidatePath(`/workspaces/${workspaceId}/brands/${brandId}`);
