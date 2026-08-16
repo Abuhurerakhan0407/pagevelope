@@ -1,4 +1,5 @@
 export * from "./compile.js";
+export * from "./motion-evidence.js";
 export * from "./plain-text.js";
 export * from "./release.js";
 export * from "./render.js";
