@@ -1,0 +1,48 @@
+name: Motion Studio Patch
+
+on:
+  push:
+    branches: [feat/motion-studio-controls]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-builder:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/motion-studio-controls
+      - name: Wire Motion Studio controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/app/builder/page.tsx')
+          text = path.read_text()
+          import_anchor = 'import styles from "./builder.module.css";\n'
+          import_line = 'import { MotionControls } from "./motion-controls";\n'
+          if import_line not in text:
+              text = text.replace(import_anchor, import_anchor + import_line)
+
+          ui_anchor = '''              {selected.cta !== undefined ? (\n                <label>\n                  <span>CTA label</span>\n                  <input value={selected.cta} onChange={(event) => updateSelected({ cta: event.target.value })} />\n                </label>\n              ) : null}\n\n'''
+          motion_ui = '''              <MotionControls block={selected} onChange={updateSelected} />\n\n'''
+          if motion_ui not in text:
+              if ui_anchor not in text:
+                  raise SystemExit('CTA anchor not found')
+              text = text.replace(ui_anchor, ui_anchor + motion_ui)
+
+          path.write_text(text)
+          PY
+      - name: Commit builder wiring
+        run: |
+          git add apps/web/app/builder/page.tsx
+          if git diff --cached --quiet; then
+            echo "Builder already wired"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat: wire Motion Studio into visual builder"
+          git push origin HEAD:feat/motion-studio-controls
