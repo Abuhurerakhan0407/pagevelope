@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createManualProduct, saveCampaignProducts } from "./actions";
+import { ShopifyPanel } from "./shopify-panel";
 import styles from "./products.module.css";
 
 type PageProps = {
   params: Promise<{ workspaceId: string; brandId: string; campaignId: string }>;
-  searchParams: Promise<{ error?: string; product?: string }>;
+  searchParams: Promise<{ error?: string; product?: string; shopify?: string }>;
 };
 
 type Product = {
@@ -19,6 +20,11 @@ type Product = {
   image_url: string | null;
   product_url: string | null;
   source: "manual" | "shopify";
+};
+
+type IntegrationConnection = {
+  external_account_id: string;
+  status: string;
 };
 
 const errors: Record<string, string> = {
@@ -48,7 +54,7 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   if (claimsError || !claimsData?.claims?.sub) redirect("/auth/sign-in");
 
-  const [workspaceResult, brandResult, campaignResult, productsResult, selectedResult] = await Promise.all([
+  const [workspaceResult, brandResult, campaignResult, productsResult, selectedResult, shopifyResult] = await Promise.all([
     supabase.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
     supabase.from("brands").select("id,name,primary_color").eq("workspace_id", workspaceId).eq("id", brandId).maybeSingle(),
     supabase
@@ -70,6 +76,12 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
       .eq("workspace_id", workspaceId)
       .eq("campaign_id", campaignId)
       .order("position", { ascending: true }),
+    supabase
+      .from("integration_connections")
+      .select("external_account_id,status")
+      .eq("workspace_id", workspaceId)
+      .eq("provider", "shopify")
+      .maybeSingle(),
   ]);
 
   const workspace = workspaceResult.data;
@@ -79,6 +91,8 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
 
   const products = (productsResult.data ?? []) as Product[];
   const selectedIds = new Set((selectedResult.data ?? []).map((item) => String(item.product_id)));
+  const shopifyConnection = shopifyResult.data as IntegrationConnection | null;
+  const connectedShop = shopifyConnection?.status === "connected" ? shopifyConnection.external_account_id : null;
   const errorMessage = query.error ? errors[query.error] : null;
   const addProduct = createManualProduct.bind(null, workspaceId, brandId, campaignId);
   const saveProducts = saveCampaignProducts.bind(null, workspaceId, brandId, campaignId);
@@ -118,6 +132,8 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
 
         {errorMessage ? <div className={styles.error}>{errorMessage}</div> : null}
         {query.product === "1" ? <div className={styles.success}>Product added to {brand.name}. Select it below when it belongs in this campaign.</div> : null}
+        {query.shopify === "connected" ? <div className={styles.success}>Shopify connected. Sync the catalog from the product source panel.</div> : null}
+        {query.shopify === "scope-error" || query.shopify === "token-error" ? <div className={styles.error}>Shopify authorization did not complete. Reconnect the store and approve product read access.</div> : null}
 
         <div className={styles.layout}>
           <section className={styles.catalogCard}>
@@ -161,13 +177,19 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
             ) : (
               <div className={styles.emptyState}>
                 <span>0 products</span>
-                <h2>Add the first product.</h2>
-                <p>Use the manual product form now. Shopify sync can plug into the same catalog contract later.</p>
+                <h2>Add or sync the first product.</h2>
+                <p>Connect Shopify for real catalog data or use the manual product form.</p>
               </div>
             )}
           </section>
 
           <aside className={styles.addCard}>
+            <p className={styles.sideKicker}>Product sources</p>
+            <h2>Shopify catalog</h2>
+            <p className={styles.sideCopy}>Import product title, first variant price/SKU, featured image and storefront URL using read-only product access.</p>
+            <ShopifyPanel workspaceId={workspaceId} brandId={brandId} connectedShop={connectedShop} />
+
+            <div style={{ height: 1, background: "rgba(15,18,33,.08)", margin: "24px 0" }} />
             <p className={styles.sideKicker}>Manual source</p>
             <h2>Add a product</h2>
             <p className={styles.sideCopy}>Use real product information. Image and product links must be HTTPS.</p>
@@ -182,7 +204,6 @@ export default async function CampaignProductsPage({ params, searchParams }: Pag
               <label><span>Product URL <em>optional</em></span><input name="productUrl" type="url" placeholder="https://…" /></label>
               <button type="submit">Add to brand catalog</button>
             </form>
-            <div className={styles.shopifyNote}><span>Shopify</span><strong>Connector next</strong><p>The catalog schema already reserves Shopify as a source; no duplicate product model will be needed.</p></div>
           </aside>
         </div>
       </section>
