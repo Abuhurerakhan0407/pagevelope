@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CampaignBlock, GifMotionValue } from "@pagevelope/editor-schema";
 import type { BuilderBlock } from "./build-campaign";
 import styles from "./builder.module.css";
@@ -17,6 +18,7 @@ function patchSource(block: BuilderBlock, motion: GifMotionValue | undefined): C
 }
 
 export function MotionControls({ block, onChange }: { block: BuilderBlock; onChange: (patch: Partial<BuilderBlock>) => void }) {
+  const [previewMode, setPreviewMode] = useState<"motion" | "static">("motion");
   if (block.kind !== "hero" && block.kind !== "image") return null;
   const image = editableImage(block);
   const motion = image?.motion;
@@ -31,6 +33,8 @@ export function MotionControls({ block, onChange }: { block: BuilderBlock; onCha
     onChange({ source: patchSource(block, enabled ? undefined : { kind: "gif", firstFrameSrc: "https://images.example.com/static-first-frame.jpg", byteSize: 1200000, frameCount: 48, durationMs: 4000, loop: true }) });
   }
 
+  const previewSrc = previewMode === "static" ? motion?.firstFrameSrc : image?.src;
+
   return (
     <div className={styles.propertyGroup}>
       <div className={styles.propertyRow}>
@@ -39,6 +43,11 @@ export function MotionControls({ block, onChange }: { block: BuilderBlock; onCha
       </div>
       {enabled ? (
         <>
+          <div className={styles.threeButtons} aria-label="Motion preview mode">
+            <button type="button" className={previewMode === "motion" ? styles.propertyActive : ""} onClick={() => setPreviewMode("motion")}>Motion</button>
+            <button type="button" className={previewMode === "static" ? styles.propertyActive : ""} onClick={() => setPreviewMode("static")}>Static fallback</button>
+          </div>
+          {previewSrc ? <img src={previewSrc} alt={previewMode === "static" ? "Static first-frame fallback preview" : image?.alt || "Animated GIF preview"} style={{ width: "100%", borderRadius: 12, display: "block" }} /> : null}
           <label><span>Animated GIF URL</span><input value={image?.src ?? ""} readOnly /></label>
           <label><span>Static first-frame URL</span><input value={motion?.firstFrameSrc ?? ""} onChange={(event) => updateMotion({ firstFrameSrc: event.target.value })} /></label>
           <label><span>Browser preview video URL (optional)</span><input value={motion?.previewVideoSrc ?? ""} onChange={(event) => updateMotion({ previewVideoSrc: event.target.value || undefined })} /></label>
