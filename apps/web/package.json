@@ -1,0 +1,21 @@
+{
+  "name": "@pagevelope/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pagevelope/editor-schema": "0.1.0",
+    "@pagevelope/email-components": "0.1.0",
+    "@pagevelope/email-renderer": "0.1.0",
+    "@pagevelope/email-qa": "0.1.0",
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  }
+}
