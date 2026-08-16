@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(21);
+select extensions.plan(25);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -45,9 +45,9 @@ values
   ('81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001', 1, '{"schemaVersion":"1.0.0","id":"81200000-0000-4000-8000-000000000001"}'::jsonb, repeat('a', 64), '80000000-0000-4000-8000-000000000001'),
   ('82000000-0000-4000-8000-000000000001', '82200000-0000-4000-8000-000000000001', 1, '{"schemaVersion":"1.0.0","id":"82200000-0000-4000-8000-000000000001"}'::jsonb, repeat('d', 64), '80000000-0000-4000-8000-000000000004');
 
-create temporary table release_test_state (candidate_id uuid);
+create temporary table release_test_state (candidate_id uuid, attempt_id uuid);
 insert into release_test_state default values;
-grant select, update on release_test_state to authenticated;
+grant select, update on release_test_state to authenticated, service_role;
 
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000002"}', true);
 set local role authenticated;
@@ -65,10 +65,7 @@ select extensions.is(
   'review'::public.campaign_status,
   'release candidate moves the campaign into review'
 );
-select extensions.is(
-  (select count(*) from public.campaign_release_candidates), 1::bigint,
-  'release candidate is persisted for the tenant'
-);
+select extensions.is((select count(*) from public.campaign_release_candidates), 1::bigint, 'release candidate is persisted for the tenant');
 select extensions.throws_ok(
   $$select public.create_release_candidate(
     '81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001',
@@ -127,15 +124,49 @@ select extensions.is(
   (public.release_candidate_readiness('81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)) ->> 'passed_client_count')::integer,
   3, 'all required inbox clients are counted only after evidence exists'
 );
+select extensions.throws_ok(
+  $$select public.record_campaign_approval(
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'approved'::public.approval_decision, 'Too early.'
+  )$$, '23514', null, 'positive approval stays blocked until a successful test send exists'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000002"}', true);
+set local role authenticated;
+select extensions.lives_ok(
+  $$update release_test_state set attempt_id = public.create_test_send_attempt(
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state), 'qa@pagevelope.test'
+  )$$, 'editor can queue a single-recipient test send after Inbox Lab passes'
+);
+select extensions.throws_ok(
+  $$select public.complete_test_send_attempt(
+    '81000000-0000-4000-8000-000000000001', (select attempt_id from release_test_state),
+    'sent'::public.test_send_status, 'forged_browser_message', ''
+  )$$, '42501', null, 'authenticated editor cannot forge provider completion'
+);
+
+reset role;
+set local role service_role;
+select extensions.lives_ok(
+  $$select public.complete_test_send_attempt(
+    '81000000-0000-4000-8000-000000000001', (select attempt_id from release_test_state),
+    'sent'::public.test_send_status, 'resend_test_message_001', ''
+  )$$, 'server service role can record provider-confirmed success'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000003"}', true);
+set local role authenticated;
 select extensions.lives_ok(
   $$select public.record_campaign_approval(
     '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
     'approved'::public.approval_decision, 'Approved for assisted pilot.'
-  )$$, 'reviewer can create an immutable approval decision'
+  )$$, 'reviewer can create an immutable approval decision after a successful test send'
 );
 select extensions.is(
   (public.release_candidate_readiness('81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)) ->> 'ready')::boolean,
-  true, 'release becomes ready only after inbox evidence and approval both pass'
+  true, 'release becomes ready only after Inbox Lab, test send, and approval pass'
 );
 select extensions.lives_ok(
   $$select public.approve_release_candidate(
@@ -148,8 +179,6 @@ select extensions.is(
   'approved release advances campaign status but does not publish it'
 );
 
--- Audit logs are deliberately admin/owner-visible, not reviewer-visible. Inspect as the
--- database test owner so this assertion proves the event exists without weakening RLS.
 reset role;
 select extensions.is(
   (select count(*) from public.audit_events where action = 'campaign.approved'),
@@ -158,7 +187,6 @@ select extensions.is(
 );
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000003"}', true);
 set local role authenticated;
-
 select extensions.throws_ok(
   $$select public.record_campaign_approval(
     '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
