@@ -41,7 +41,7 @@ export default function Home() {
         <article className="statusCard">
           <span>First product proof</span>
           <strong>Deterministic renderer</strong>
-          <p>Structured campaign JSON compiled into tested email HTML.</p>
+          <p>Structured campaign JSON mapped into controlled MJML with repeatable test evidence.</p>
         </article>
         <article className="statusCard">
           <span>Release boundary</span>
