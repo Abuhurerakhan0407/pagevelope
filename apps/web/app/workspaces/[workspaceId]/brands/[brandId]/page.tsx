@@ -31,6 +31,7 @@ type Campaign = {
   status: string;
   current_version_number: number;
   updated_at: string;
+  product_selection_completed_at: string | null;
   campaign_system: string | null;
   brief_completed_at: string | null;
   selected_direction_key: string | null;
@@ -42,16 +43,24 @@ const campaignErrors: Record<string, string> = {
 };
 
 function campaignRoute(workspaceId: string, brandId: string, campaign: Campaign) {
-  if (!campaign.brief_completed_at || !campaign.selected_direction_key) {
-    return `/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(campaign.id)}/brief`;
-  }
+  const base = `/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(campaign.id)}`;
+  if (!campaign.product_selection_completed_at) return `${base}/products`;
+  if (!campaign.brief_completed_at || !campaign.selected_direction_key) return `${base}/brief`;
   return `/builder?workspaceId=${encodeURIComponent(workspaceId)}&brandId=${encodeURIComponent(brandId)}&campaignId=${encodeURIComponent(campaign.id)}`;
 }
 
 function campaignActionLabel(campaign: Campaign) {
+  if (!campaign.product_selection_completed_at) return "Select products →";
   if (!campaign.brief_completed_at) return "Create brief →";
   if (!campaign.selected_direction_key) return "Choose direction →";
   return "Open builder →";
+}
+
+function campaignProgressLabel(campaign: Campaign) {
+  if (!campaign.product_selection_completed_at) return "Products pending";
+  if (!campaign.brief_completed_at) return "Products ready";
+  if (!campaign.selected_direction_key) return campaign.campaign_system ?? "Brief ready";
+  return `${campaign.campaign_system ?? "Campaign"} · direction selected`;
 }
 
 export const dynamic = "force-dynamic";
@@ -80,7 +89,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
       .maybeSingle(),
     supabase
       .from("campaigns")
-      .select("id,name,status,current_version_number,updated_at,campaign_system,brief_completed_at,selected_direction_key")
+      .select("id,name,status,current_version_number,updated_at,product_selection_completed_at,campaign_system,brief_completed_at,selected_direction_key")
       .eq("workspace_id", workspaceId)
       .eq("brand_id", brandId)
       .order("updated_at", { ascending: false }),
@@ -149,7 +158,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
             <section className={styles.section}>
               <div className={styles.sectionHead}>
                 <h2>Campaigns</h2>
-                <p>Each campaign must pass brief and creative-direction gates before the production builder opens.</p>
+                <p>Each campaign must select products, complete a brief, and choose a creative direction before the production builder opens.</p>
               </div>
               {campaigns.length ? (
                 <div className={styles.metaGrid}>
@@ -159,9 +168,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
                       href={campaignRoute(workspaceId, brandId, campaign)}
                       key={campaign.id}
                     >
-                      <span>
-                        {campaign.campaign_system ?? "Brief pending"} · version {campaign.current_version_number}
-                      </span>
+                      <span>{campaignProgressLabel(campaign)} · version {campaign.current_version_number}</span>
                       <strong>{campaign.name}</strong>
                       <span>{campaignActionLabel(campaign)}</span>
                     </Link>
@@ -185,7 +192,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
             </div>
             <div className={styles.nextCard}>
               <strong>Create a campaign</strong>
-              <p>Start a persisted draft, complete its brief, choose one of three directions, then enter the builder.</p>
+              <p>Start a persisted draft, choose 1–6 products, complete the brief, choose one of three directions, then enter the builder.</p>
               <form action={boundCreateCampaign}>
                 <input className={styles.input} name="name" type="text" maxLength={200} placeholder="September product launch" required />
                 <button className={styles.nextButton} type="submit">Create campaign</button>

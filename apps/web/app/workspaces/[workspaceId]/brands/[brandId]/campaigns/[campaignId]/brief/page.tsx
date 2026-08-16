@@ -22,6 +22,7 @@ type Campaign = {
   id: string;
   name: string;
   status: string;
+  product_selection_completed_at: string | null;
   campaign_system: string | null;
   brief_goal: string | null;
   brief_audience: string | null;
@@ -38,6 +39,7 @@ const errorMessages: Record<string, string> = {
   "brief-save-failed": "The campaign brief could not be saved. Nothing was partially written.",
   "invalid-direction": "Choose one of the three generated creative directions.",
   "direction-save-failed": "The creative direction could not be selected.",
+  "direction-seed-failed": "The selected direction could not be converted into a valid first campaign version.",
 };
 
 const systemLabels: Record<string, string> = {
@@ -92,7 +94,7 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
     supabase
       .from("campaigns")
       .select(
-        "id,name,status,campaign_system,brief_goal,brief_audience,brief_offer,brief_tone,brief_motion_level,creative_directions,selected_direction_key,brief_completed_at",
+        "id,name,status,product_selection_completed_at,campaign_system,brief_goal,brief_audience,brief_offer,brief_tone,brief_motion_level,creative_directions,selected_direction_key,brief_completed_at",
       )
       .eq("workspace_id", workspaceId)
       .eq("brand_id", brandId)
@@ -103,6 +105,10 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
   if (!workspace || !brand || !campaignData) redirect("/dashboard");
 
   const campaign = campaignData as Campaign;
+  if (!campaign.product_selection_completed_at) {
+    redirect(productsPath(workspaceId, brandId, campaignId));
+  }
+
   const directions = parseDirections(campaign.creative_directions);
   const briefReady = Boolean(campaign.brief_completed_at && directions.length === 3);
   const showForm = !briefReady || query.edit === "1";
@@ -125,11 +131,13 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
         <div className={styles.progress}>
           <div className={styles.progressItem}><i className={styles.done}>✓</i><span>Brand</span></div>
           <div className={styles.progressLine} />
-          <div className={styles.progressItem}><i className={styles.active}>2</i><span>Brief</span></div>
+          <div className={styles.progressItem}><i className={styles.done}>✓</i><span>Products</span></div>
           <div className={styles.progressLine} />
-          <div className={styles.progressItem}><i className={briefReady ? styles.active : ""}>3</i><span>Direction</span></div>
+          <div className={styles.progressItem}><i className={styles.active}>3</i><span>Brief</span></div>
           <div className={styles.progressLine} />
-          <div className={styles.progressItem}><i>4</i><span>Builder</span></div>
+          <div className={styles.progressItem}><i className={briefReady ? styles.active : ""}>4</i><span>Direction</span></div>
+          <div className={styles.progressLine} />
+          <div className={styles.progressItem}><i>5</i><span>Builder</span></div>
         </div>
 
         <div className={styles.headingRow}>
@@ -213,6 +221,7 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
                 <li>Use motion without a static fallback</li>
                 <li>Open publishing before the QA gates</li>
               </ul>
+              <Link href={productsPath(workspaceId, brandId, campaignId)}>← Edit products</Link>
               {briefReady ? <Link href={briefPath(workspaceId, brandId, campaignId)}>Cancel editing</Link> : null}
             </aside>
           </div>
@@ -223,6 +232,7 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
               <div><span>Audience</span><strong>{campaign.brief_audience}</strong></div>
               <div><span>Offer</span><strong>{campaign.brief_offer}</strong></div>
               <div><span>Motion</span><strong>{campaign.brief_motion_level}</strong></div>
+              <Link href={productsPath(workspaceId, brandId, campaignId)}>Edit products</Link>
               <Link href={`${briefPath(workspaceId, brandId, campaignId)}?edit=1`}>Edit brief</Link>
             </div>
 
@@ -269,4 +279,8 @@ export default async function CampaignBriefPage({ params, searchParams }: PagePr
 
 function briefPath(workspaceId: string, brandId: string, campaignId: string) {
   return `/workspaces/${workspaceId}/brands/${brandId}/campaigns/${campaignId}/brief`;
+}
+
+function productsPath(workspaceId: string, brandId: string, campaignId: string) {
+  return `/workspaces/${workspaceId}/brands/${brandId}/campaigns/${campaignId}/products`;
 }

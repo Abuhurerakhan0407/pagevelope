@@ -33,6 +33,6 @@ export async function createCampaignDraft(workspaceId: string, brandId: string, 
 
   revalidatePath(`/workspaces/${workspaceId}/brands/${brandId}`);
   redirect(
-    `/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(String(data))}/brief`,
+    `/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(String(data))}/products`,
   );
 }
