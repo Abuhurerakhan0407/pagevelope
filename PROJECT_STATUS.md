@@ -1,77 +1,120 @@
 # Pagevelope Project Status
 
-Updated: 16 August 2026
+Updated: 17 August 2026
 
 ## Active phase
 
-Supabase SaaS foundation — authentication boundary, workspaces, roles, tenant-isolated RLS, private originals, and audit events.
+**Pilot activation — code-complete MVP, external production setup still required.**
 
-## Phase 0 — CLOSED
+The remaining work is no longer broad feature development. It is the controlled activation of real Supabase, Resend, Shopify and Klaviyo environments, followed by real inbox/test-send/publish evidence.
 
-- Product promise and first ICP locked.
-- Core stack and AI/tool ownership locked.
-- GitHub repository `Abuhurerakhan0407/pagevelope` connected.
-- Canonical `package-lock.json` committed.
-- GitHub Actions uses locked `npm ci` installs.
-- CI passes dependency audit, lint, typecheck, tests, and production build.
+## Repository and delivery foundation — CLOSED
+
+- GitHub repository `Abuhurerakhan0407/pagevelope` is the source of truth.
+- Canonical `package-lock.json` is committed and CI uses locked `npm ci` installs.
+- CI permanently runs production dependency audit, lint, typecheck, tests and production build.
+- Database CI applies every migration to a disposable Supabase database, replays from scratch and runs adversarial RLS tests.
 - Vercel project is connected with root directory `apps/web`.
-- Live browser smoke test passed.
-- Production secrets remain unavailable to coding agents.
-- Software Factory remains disabled for production orchestration.
+- Earlier live browser smoke testing passed. Current Vercel preview/production rebuilds are temporarily blocked by the account build-rate limit, not by application CI.
 
-## Production renderer gate — CLOSED
+## Production renderer — CLOSED
 
-- MJML compiler pinned to `5.4.0` and strict validation enabled.
-- Controlled campaign JSON compiles to production MJML/HTML/plain text.
-- Release bundle contains canonical source JSON, MJML, compiled HTML, plain text, and manifest.
-- Release manifest records SHA-256 fingerprints and compiler metadata.
+- MJML compiler pinned to `5.4.0` with strict validation.
+- Controlled campaign JSON compiles to deterministic MJML, HTML and plain text.
+- Release bundle contains canonical source JSON, MJML, HTML, plain text and manifest.
+- SHA-256 fingerprints and compiler metadata are recorded.
 - Final HTML safety checks block executable markup and unsafe output.
-- Legal address and Klaviyo unsubscribe requirements are preserved.
-- Images-off essential-content behavior is covered by the renderer suite.
-- Determinism is proven across a 20-campaign fixture matrix.
+- Legal address, unsubscribe, images-off essentials and link-safety behavior are covered.
+- Determinism is proven across the 20-campaign fixture matrix.
 - High-severity production dependency audit is a permanent CI gate.
 
-## Visual Builder → renderer pipeline — CLOSED
+## SaaS / tenant foundation — CLOSED IN CODE
 
-- Professional visual builder v1 is live.
-- Blocks and layers map into `CampaignDocumentV1`.
-- Current builder state renders through the deterministic server-side MJML release renderer.
-- Production HTML can be previewed inside the builder.
-- Renderer version, QA result, HTML bytes, and source fingerprint are surfaced.
-- HTML fallback download is available only after a successful render.
-- Edited campaigns invalidate stale rendered output.
-- Publish remains fail-closed behind approval and Inbox Lab gates.
-- PR #5 merged as commit `44d5f5b` with green CI and successful Vercel deployment.
+- Supabase SSR authentication boundary.
+- Workspace onboarding and membership roles: owner, admin, editor, reviewer, viewer.
+- Tenant-isolated RLS and adversarial two-workspace tests.
+- Brands and brand profile data.
+- Campaign brief and creative-direction workflow.
+- Immutable campaign versions with optimistic concurrency.
+- Private original-asset storage contract.
+- Audit events and last-owner protection.
+- Production migrations are authored and repeatedly validated in disposable CI databases.
 
-## Supabase tenant foundation — IN PROGRESS
+**Production migration application remains an explicit human-controlled action.**
 
-Authored on an isolated branch, not applied to production:
+## Products and Shopify — CLOSED IN CODE
 
-- workspace roles: owner, admin, editor, reviewer, viewer;
-- profiles, workspaces, memberships, brands, campaigns, immutable campaign versions, asset metadata, audit events;
-- workspace-aware foreign keys and indexes;
-- row-level security on every application table;
-- private security-definer authorization helpers;
-- last-owner protection;
-- anonymous table access revoked;
-- private `pagevelope-originals` Storage bucket contract;
-- immutable original asset update boundary;
-- static migration security-contract tests;
-- migration and role/storage documentation.
+- Manual product catalog and campaign product selection.
+- Shopify OAuth authorization-code integration.
+- Strict `*.myshopify.com` validation, callback state/HMAC verification and encrypted offline tokens.
+- Least-privilege `read_products` scope.
+- Admin GraphQL product import with pagination and retry-safe external identities.
+- Shopify catalog sync preserves manual products and tenant isolation.
+- Pagination remains available after product-catalog refresh.
+- No Shopify customer/order/write scopes are used.
 
-## Current gate
+## Visual Builder — CLOSED
 
-Before production database connection or migration application:
+- Professional constrained 600px email builder.
+- Builder blocks map into versioned `CampaignDocumentV1` source.
+- Desktop/mobile/images-off preview states.
+- Current builder state renders through the deterministic server-side renderer.
+- Successful renders surface renderer version, QA result, HTML bytes and source fingerprint.
+- HTML fallback download remains gated behind a successful render.
+- Stale rendered output is invalidated after edits.
 
-- pass repository CI with the migration contract tests;
-- run the migration against a disposable/local Supabase database once the Supabase CLI/project connection is available;
-- add adversarial RLS tests using at least two users and two workspaces;
-- verify owner/admin/editor/reviewer/viewer behavior;
-- verify private Storage cross-tenant isolation;
-- integrate the Next.js Supabase SSR auth client with no production secrets in source control.
+## Motion Studio — CLOSED IN CODE
 
-Database migrations may be authored and tested by agents. **Production migration application remains human-controlled.**
+- Dedicated Motion Studio for persisted campaign versions.
+- Supports header, hero, image, product and column media targets.
+- Direct animated-GIF upload instead of manual URL/metric entry.
+- Direct separate first-frame upload for Outlook/static fallback.
+- Optional MP4 browser-preview asset.
+- Content-addressed SHA-256 public delivery assets while originals remain private.
+- GIF byte inspection derives frame count, duration and infinite-loop proof.
+- 2 MB warning and 5 MB hard release block.
+- Read-only measured motion evidence.
+- Removing motion promotes the proven first frame to the production static image.
+- Motion edits create new immutable campaign versions.
 
-## Next platform milestone
+## Release review / Inbox boundary — CLOSED IN CODE
 
-After the tenant gate is proven, connect authentication and onboarding in the web app: sign in → create/join workspace → brand setup → campaign persistence/versioning. Then connect the existing Visual Builder to real workspace data instead of demo state.
+- Release candidates bind the exact campaign version, renderer evidence and manifest fingerprints.
+- Release generation fails closed on blocking QA.
+- Review workflow preserves immutable approval requirements.
+- Inbox evidence is represented as a release gate and cannot be silently treated as Playwright/browser evidence.
+- Real mailbox/client evidence is still required during pilot activation before a real production release is approved.
+
+## Test send — CLOSED IN CODE
+
+- Explicit single-recipient test-send boundary exists.
+- Resend is limited to test/transactional delivery, not campaign sending infrastructure.
+- Test-send behavior is tied to the release candidate and approval pipeline.
+- Real provider credentials and one real test delivery are still required for pilot evidence.
+
+## Klaviyo publish — CLOSED IN CODE
+
+- Klaviyo OAuth connection metadata and encrypted server-side credential storage.
+- Approved/current release is reverified immediately before publishing.
+- Pagevelope creates production CODE-template content and records immutable publish receipts.
+- Receipt records provider IDs plus source/manifest fingerprints.
+- Publish fails closed when connection, approval, candidate freshness or environment configuration is missing.
+- Pagevelope does not call the Klaviyo campaign-send endpoint; sending remains in Klaviyo.
+
+## Remaining pilot activation work — HUMAN / EXTERNAL
+
+1. Create/connect the production Supabase project and apply the already-tested migrations.
+2. Configure production-only environment values in Vercel for Supabase, Resend, Shopify and Klaviyo. No secret is committed to GitHub.
+3. Authorize one real Shopify development/pilot store and sync products.
+4. Authorize one real Klaviyo account.
+5. Verify one real content-addressed image/GIF delivery asset from production Supabase Storage.
+6. Execute one real Resend test-send to a controlled recipient.
+7. Capture real inbox-client evidence for the pilot campaign and record it in the release workflow.
+8. Approve the exact immutable candidate and perform one controlled Klaviyo publish.
+9. Verify the immutable release receipt and perform final browser/pilot smoke testing.
+
+## Current completion estimate
+
+**~95% pilot-ready.**
+
+The remaining ~5% is primarily external account provisioning, production secrets/authorization, production database activation, real mailbox evidence and the first controlled customer/pilot publish. Those boundaries intentionally remain outside unattended coding-agent authority.
