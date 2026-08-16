@@ -11,6 +11,10 @@ function reviewPath(workspaceId: string, candidateId: string) {
   return `/review/${encodeURIComponent(candidateId)}?workspaceId=${encodeURIComponent(workspaceId)}`;
 }
 
+function publishPath(workspaceId: string, candidateId: string) {
+  return `/publish/${encodeURIComponent(candidateId)}?workspaceId=${encodeURIComponent(workspaceId)}`;
+}
+
 async function authenticatedClient() {
   if (!getSupabasePublicConfig()) redirect("/dashboard");
   const supabase = await createClient();
@@ -108,5 +112,6 @@ export async function finalizeApprovalAction(
   }
 
   revalidatePath(`/review/${candidateId}`);
-  redirect(`${path}&saved=finalized`);
+  revalidatePath(`/publish/${candidateId}`);
+  redirect(publishPath(workspaceId, candidateId));
 }
