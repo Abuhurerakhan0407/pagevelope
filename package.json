@@ -22,13 +22,13 @@
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "mjml": "5.4.0"
+    "mjml": "5.4.0",
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   },
   "overrides": {
-    "next@16.2.12": {
-      "postcss": "8.5.23",
-      "sharp": "0.35.3"
-    }
+    "postcss": "$postcss",
+    "sharp": "$sharp"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
