@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { CampaignDocumentV1, ImageValue } from "@pagevelope/editor-schema";
 import { validateCampaignDocument } from "@pagevelope/editor-schema";
+import { inspectGif, uploadDeliveryAsset } from "@/lib/assets/delivery";
 import styles from "./motion-studio.module.css";
 
 type Hydration = {
@@ -12,7 +13,7 @@ type Hydration = {
     name: string;
     current_version_number: number;
   };
-  brand: { name: string };
+  brand: { id: string; name: string };
   latestVersion: {
     version_number: number;
     source_json: CampaignDocumentV1;
@@ -33,6 +34,8 @@ type FormState = {
   frameCount: string;
   durationMs: string;
 };
+
+type UploadKind = "gif" | "firstFrame" | "preview";
 
 const EMPTY_FORM: FormState = {
   gifSrc: "",
@@ -112,7 +115,7 @@ function replaceTargetImage(document: CampaignDocumentV1, key: string, image: Im
 function formFromTarget(target: MotionTarget | undefined): FormState {
   if (!target) return EMPTY_FORM;
   return {
-    gifSrc: target.image.src,
+    gifSrc: target.image.motion ? target.image.src : "",
     firstFrameSrc: target.image.motion?.firstFrameSrc ?? "",
     previewVideoSrc: target.image.motion?.previewVideoSrc ?? "",
     byteSize: target.image.motion ? String(target.image.motion.byteSize) : "",
@@ -125,10 +128,11 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
   const [document, setDocument] = useState<CampaignDocumentV1 | null>(null);
   const [campaignName, setCampaignName] = useState("Campaign");
   const [brandName, setBrandName] = useState("Brand");
+  const [brandId, setBrandId] = useState("");
   const [version, setVersion] = useState(0);
   const [selectedKey, setSelectedKey] = useState("");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [state, setState] = useState<"loading" | "ready" | "saving" | "error">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "uploading" | "saving" | "error">("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -153,6 +157,7 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
         setDocument(payload.latestVersion.source_json);
         setCampaignName(payload.campaign.name);
         setBrandName(payload.brand.name);
+        setBrandId(payload.brand.id);
         setVersion(payload.campaign.current_version_number);
         const first = collectTargets(payload.latestVersion.source_json)[0];
         if (first) {
@@ -182,11 +187,59 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
       ? "WARN"
       : "PASS";
   const timingWarn = (Number.isFinite(frameCount) && frameCount > 180) || (Number.isFinite(durationMs) && durationMs > 15_000);
+  const busy = state === "uploading" || state === "saving";
 
   function chooseTarget(key: string) {
     setSelectedKey(key);
     setForm(formFromTarget(targets.find((target) => target.key === key)));
     setMessage("");
+  }
+
+  async function uploadAsset(kind: UploadKind, file: File | undefined) {
+    if (!file || !brandId || busy) return;
+
+    if (kind === "gif" && file.size > 5_000_000) {
+      setState("error");
+      setMessage("Animated GIF is above Pagevelope's 5 MB release block. Optimize it before upload.");
+      return;
+    }
+    if (kind === "firstFrame" && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setState("error");
+      setMessage("First frame must be JPEG, PNG, or WebP.");
+      return;
+    }
+    if (kind === "preview" && file.type !== "video/mp4") {
+      setState("error");
+      setMessage("Browser preview must be an MP4 file.");
+      return;
+    }
+
+    setState("uploading");
+    setMessage("");
+    try {
+      if (kind === "gif") {
+        const inspection = await inspectGif(file);
+        const asset = await uploadDeliveryAsset({ workspaceId, brandId, file });
+        setForm((current) => ({
+          ...current,
+          gifSrc: asset.publicUrl,
+          byteSize: String(asset.byteSize),
+          frameCount: String(inspection.frameCount),
+          durationMs: String(inspection.durationMs),
+        }));
+        setMessage(`GIF verified and uploaded · ${inspection.frameCount} frames · ${inspection.durationMs} ms loop.`);
+      } else {
+        const asset = await uploadDeliveryAsset({ workspaceId, brandId, file });
+        setForm((current) => kind === "firstFrame"
+          ? { ...current, firstFrameSrc: asset.publicUrl }
+          : { ...current, previewVideoSrc: asset.publicUrl });
+        setMessage(kind === "firstFrame" ? "Static first frame uploaded." : "Browser preview video uploaded.");
+      }
+      setState("ready");
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Asset upload failed.");
+    }
   }
 
   async function persist(nextDocument: CampaignDocumentV1, successMessage: string) {
@@ -228,7 +281,7 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
 
     if (!httpsUrl(gifSrc) || !httpsUrl(firstFrameSrc) || gifSrc === firstFrameSrc) {
       setState("error");
-      setMessage("GIF and first-frame URLs must be different HTTPS assets.");
+      setMessage("Upload a verified GIF and a separate static first frame before saving motion.");
       return;
     }
     if (previewVideoSrc && !httpsUrl(previewVideoSrc)) {
@@ -238,7 +291,7 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
     }
     if (!Number.isInteger(bytes) || bytes < 1 || bytes > 5_000_000 || !Number.isInteger(frames) || frames < 2 || !Number.isInteger(duration) || duration < 1) {
       setState("error");
-      setMessage("Use real GIF metrics: 1–5,000,000 bytes, at least 2 frames, and a positive duration.");
+      setMessage("Verified GIF evidence is incomplete or outside the release limits.");
       return;
     }
 
@@ -279,7 +332,7 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
 
       <section className={styles.page}>
         <div className={styles.hero}>
-          <div><p>Motion Studio · safe email motion</p><h1>Animate without gambling on the inbox.</h1><span>GIF for capable clients. Separate meaningful first frame for Outlook. Release limits stay fail-closed.</span></div>
+          <div><p>Motion Studio · safe email motion</p><h1>Animate without gambling on the inbox.</h1><span>Upload the GIF and first frame. Pagevelope hashes the files, measures the animation, stores immutable delivery assets, and keeps Outlook on the proven static fallback.</span></div>
           <div className={styles.score}><span>Payload gate</span><strong className={payloadStatus === "BLOCK" ? styles.block : payloadStatus === "WARN" ? styles.warn : styles.pass}>{payloadStatus}</strong><small>{timingWarn ? "Timing optimization recommended" : "Timing within preferred range"}</small></div>
         </div>
 
@@ -299,27 +352,34 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
             <div className={styles.sectionHead}><span>02</span><div><h2>Fallback proof</h2><p>Compare what modern clients and Outlook receive.</p></div></div>
             {selected ? (
               <div className={styles.previewGrid}>
-                <article><div className={styles.previewLabel}><span>Animated</span><b>GIF / capable clients</b></div><div className={styles.imageStage}>{selected.image.src ? <img src={form.gifSrc || selected.image.src} alt={selected.image.alt} /> : null}</div></article>
-                <article><div className={styles.previewLabel}><span>Static</span><b>Outlook first frame</b></div><div className={styles.imageStage}>{form.firstFrameSrc ? <img src={form.firstFrameSrc} alt={`${selected.image.alt} static fallback`} /> : <span className={styles.placeholder}>Add a separate first-frame URL.</span>}</div></article>
+                <article><div className={styles.previewLabel}><span>Animated</span><b>GIF / capable clients</b></div><div className={styles.imageStage}>{form.gifSrc ? <img src={form.gifSrc} alt={selected.image.alt} /> : <span className={styles.placeholder}>Upload an animated GIF.</span>}</div></article>
+                <article><div className={styles.previewLabel}><span>Static</span><b>Outlook first frame</b></div><div className={styles.imageStage}>{form.firstFrameSrc ? <img src={form.firstFrameSrc} alt={`${selected.image.alt} static fallback`} /> : <span className={styles.placeholder}>Upload a separate first frame.</span>}</div></article>
               </div>
             ) : <div className={styles.placeholder}>Select a saved campaign image.</div>}
           </section>
 
           <aside className={styles.controls}>
-            <div className={styles.sectionHead}><span>03</span><div><h2>Motion evidence</h2><p>Real asset metrics become release evidence.</p></div></div>
+            <div className={styles.sectionHead}><span>03</span><div><h2>Motion evidence</h2><p>Pick files; Pagevelope generates the evidence automatically.</p></div></div>
             {selected ? (
               <div className={styles.form}>
-                <label><span>Animated GIF URL</span><input type="url" value={form.gifSrc} onChange={(event) => setForm({ ...form, gifSrc: event.target.value })} placeholder="https://…/campaign.gif" /></label>
-                <label><span>Static first-frame URL</span><input type="url" value={form.firstFrameSrc} onChange={(event) => setForm({ ...form, firstFrameSrc: event.target.value })} placeholder="https://…/first-frame.jpg" /></label>
-                <label><span>Browser preview video <em>optional</em></span><input type="url" value={form.previewVideoSrc} onChange={(event) => setForm({ ...form, previewVideoSrc: event.target.value })} placeholder="https://…/preview.mp4" /></label>
-                <div className={styles.metricGrid}>
-                  <label><span>Bytes</span><input inputMode="numeric" value={form.byteSize} onChange={(event) => setForm({ ...form, byteSize: event.target.value })} placeholder="1800000" /></label>
-                  <label><span>Frames</span><input inputMode="numeric" value={form.frameCount} onChange={(event) => setForm({ ...form, frameCount: event.target.value })} placeholder="60" /></label>
-                  <label><span>Duration ms</span><input inputMode="numeric" value={form.durationMs} onChange={(event) => setForm({ ...form, durationMs: event.target.value })} placeholder="6000" /></label>
+                <label className={styles.filePicker}><span>Animated GIF</span><input type="file" accept="image/gif" disabled={busy} onChange={(event) => void uploadAsset("gif", event.target.files?.[0])} /><small>Required · infinite-loop GIF · max 5 MB</small></label>
+                <label className={styles.filePicker}><span>Static first frame</span><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => void uploadAsset("firstFrame", event.target.files?.[0])} /><small>Required · meaningful Outlook fallback</small></label>
+                <label className={styles.filePicker}><span>Browser preview video <em>optional</em></span><input type="file" accept="video/mp4" disabled={busy} onChange={(event) => void uploadAsset("preview", event.target.files?.[0])} /><small>Optional · preview only, never embedded in email</small></label>
+
+                <div className={styles.assetEvidence}>
+                  <span><b>GIF</b>{form.gifSrc ? "Uploaded" : "Missing"}</span>
+                  <span><b>First frame</b>{form.firstFrameSrc ? "Uploaded" : "Missing"}</span>
+                  <span><b>Preview</b>{form.previewVideoSrc ? "Uploaded" : "Optional"}</span>
                 </div>
-                <div className={styles.rules}><span>✓ Loop locked on</span><span>Warn &gt; 2 MB</span><span>Block &gt; 5 MB</span><span>Warn &gt; 180 frames / 15s</span></div>
-                <button className={styles.primary} type="button" disabled={state === "saving"} onClick={attachMotion}>{state === "saving" ? "Saving version…" : motion ? "Update safe motion" : "Attach safe motion"}</button>
-                {motion ? <button className={styles.remove} type="button" disabled={state === "saving"} onClick={removeMotion}>Remove motion → use first frame</button> : null}
+
+                <div className={styles.metricGrid}>
+                  <label><span>Bytes</span><input readOnly value={form.byteSize} placeholder="Measured on upload" /></label>
+                  <label><span>Frames</span><input readOnly value={form.frameCount} placeholder="Measured" /></label>
+                  <label><span>Duration ms</span><input readOnly value={form.durationMs} placeholder="Measured" /></label>
+                </div>
+                <div className={styles.rules}><span>✓ SHA-256 immutable URLs</span><span>✓ Infinite loop verified</span><span>Warn &gt; 2 MB</span><span>Block &gt; 5 MB</span><span>Warn &gt; 180 frames / 15s</span></div>
+                <button className={styles.primary} type="button" disabled={busy || !form.gifSrc || !form.firstFrameSrc} onClick={attachMotion}>{state === "uploading" ? "Uploading evidence…" : state === "saving" ? "Saving version…" : motion ? "Update safe motion" : "Attach safe motion"}</button>
+                {motion ? <button className={styles.remove} type="button" disabled={busy} onClick={removeMotion}>Remove motion → use first frame</button> : null}
               </div>
             ) : null}
           </aside>
