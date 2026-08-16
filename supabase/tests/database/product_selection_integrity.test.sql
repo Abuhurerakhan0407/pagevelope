@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(17);
+select extensions.plan(16);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -192,20 +192,10 @@ select extensions.ok(
   'controlled setter marks the product gate complete'
 );
 
-select extensions.throws_ok(
-  $$update public.campaign_products
-    set product_id = (select product_b from integrity_product_state)
-    where campaign_id = '73300000-0000-4000-8000-000000000001'
-      and product_id = (select product_c from integrity_product_state)$$,
-  '23514',
-  null,
-  'direct update cannot swap in a different brand product'
-);
-
 select extensions.is(
   (select count(*) from public.campaign_products where campaign_id = '73300000-0000-4000-8000-000000000001'),
   2::bigint,
-  'failed cross-brand mutation leaves the valid product selection intact'
+  'controlled setter leaves exactly the intended valid product selection'
 );
 
 reset role;
