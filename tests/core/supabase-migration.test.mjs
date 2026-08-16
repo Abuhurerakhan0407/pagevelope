@@ -41,9 +41,10 @@ test("authorization helpers live in the private schema and use security definer"
     "can_edit_workspace",
     "can_admin_workspace",
     "is_workspace_owner",
+    "can_bootstrap_workspace_owner",
   ]) {
     const pattern = new RegExp(
-      `create or replace function private\\.${helper}\\([^)]*\\)[\\s\\S]*?security definer[\\s\\S]*?set search_path = ''`,
+      `create or replace function private\\.${helper}\\([\\s\\S]*?\\)[\\s\\S]*?security definer[\\s\\S]*?set search_path = ''`,
       "i",
     );
     assert.match(sql, pattern);
@@ -51,6 +52,14 @@ test("authorization helpers live in the private schema and use security definer"
 
   assert.match(normalized, /workspace_memberships_user_idx on public\.workspace_memberships\(user_id, workspace_id\)/);
   assert.match(normalized, /wm\.user_id = \(select auth\.uid\(\)\)/);
+});
+
+test("workspace bootstrap is one-time and cannot restore a removed creator", () => {
+  assert.match(normalized, /create or replace function private\.can_bootstrap_workspace_owner/);
+  assert.match(normalized, /and not exists \( select 1 from public\.workspace_memberships wm where wm\.workspace_id = target_workspace_id \)/);
+  assert.match(normalized, /create policy workspaces_select_member_or_bootstrap_creator on public\.workspaces for select to authenticated using \( private\.is_workspace_member\(id\) or private\.can_bootstrap_workspace_owner\(id, \(select auth\.uid\(\)\)\) \)/);
+  assert.match(normalized, /role = 'owner'::public\.workspace_role and private\.can_bootstrap_workspace_owner\(workspace_id, user_id\)/);
+  assert.doesNotMatch(normalized, /create policy workspaces_select_member_or_creator/);
 });
 
 test("immutable records do not receive update or delete policies", () => {
