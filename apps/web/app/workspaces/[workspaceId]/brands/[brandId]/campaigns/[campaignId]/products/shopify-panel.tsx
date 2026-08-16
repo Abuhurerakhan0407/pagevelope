@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import styles from "./products.module.css";
 
@@ -20,6 +21,7 @@ export function ShopifyPanel({
   brandId: string;
   connectedShop: string | null;
 }) {
+  const router = useRouter();
   const [shop, setShop] = useState(connectedShop ?? "");
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -45,11 +47,19 @@ export function ShopifyPanel({
         setMessage(payload.error ?? "Shopify sync failed.");
         return;
       }
-      setCursor(payload.nextCursor ?? null);
-      setHasMore(Boolean(payload.hasNextPage));
+
+      const nextPageCursor = payload.nextCursor ?? null;
+      const morePages = Boolean(payload.hasNextPage && nextPageCursor);
+      setCursor(nextPageCursor);
+      setHasMore(morePages);
       setState(payload.failed ? "error" : "success");
-      setMessage(`${payload.synced ?? 0} products synced${payload.failed ? ` · ${payload.failed} failed` : ""}.`);
-      window.location.reload();
+      setMessage(
+        `${payload.synced ?? 0} products synced${payload.failed ? ` · ${payload.failed} failed` : ""}${morePages ? " · more products available" : " · catalog page complete"}.`,
+      );
+
+      // Refresh only the server-rendered catalog. A full browser reload would erase the
+      // returned Shopify cursor and make page 2+ impossible to reach.
+      router.refresh();
     } catch {
       setState("error");
       setMessage("Shopify sync request could not reach Pagevelope.");
