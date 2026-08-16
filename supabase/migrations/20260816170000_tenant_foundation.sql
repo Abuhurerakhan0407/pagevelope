@@ -250,6 +250,32 @@ as $$
   );
 $$;
 
+create or replace function private.can_bootstrap_workspace_owner(
+  target_workspace_id uuid,
+  target_user_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    (select auth.uid()) is not null
+    and target_user_id = (select auth.uid())
+    and exists (
+      select 1
+      from public.workspaces w
+      where w.id = target_workspace_id
+        and w.created_by = (select auth.uid())
+    )
+    and not exists (
+      select 1
+      from public.workspace_memberships wm
+      where wm.workspace_id = target_workspace_id
+    );
+$$;
+
 create or replace function private.prevent_last_workspace_owner()
 returns trigger
 language plpgsql
@@ -319,6 +345,7 @@ revoke all on function private.is_workspace_member(uuid) from public, anon;
 revoke all on function private.can_edit_workspace(uuid) from public, anon;
 revoke all on function private.can_admin_workspace(uuid) from public, anon;
 revoke all on function private.is_workspace_owner(uuid) from public, anon;
+revoke all on function private.can_bootstrap_workspace_owner(uuid, uuid) from public, anon;
 revoke all on function private.path_workspace_id(text) from public, anon;
 
 grant execute on function private.workspace_role_for(uuid) to authenticated;
@@ -326,6 +353,7 @@ grant execute on function private.is_workspace_member(uuid) to authenticated;
 grant execute on function private.can_edit_workspace(uuid) to authenticated;
 grant execute on function private.can_admin_workspace(uuid) to authenticated;
 grant execute on function private.is_workspace_owner(uuid) to authenticated;
+grant execute on function private.can_bootstrap_workspace_owner(uuid, uuid) to authenticated;
 grant execute on function private.path_workspace_id(text) to authenticated;
 
 alter table public.profiles enable row level security;
@@ -353,12 +381,12 @@ on public.workspaces for insert
 to authenticated
 with check ((select auth.uid()) is not null and created_by = (select auth.uid()));
 
-create policy workspaces_select_member_or_creator
+create policy workspaces_select_member_or_bootstrap_creator
 on public.workspaces for select
 to authenticated
 using (
   private.is_workspace_member(id)
-  or created_by = (select auth.uid())
+  or private.can_bootstrap_workspace_owner(id, (select auth.uid()))
 );
 
 create policy workspaces_update_admin
@@ -382,14 +410,8 @@ on public.workspace_memberships for insert
 to authenticated
 with check (
   (
-    user_id = (select auth.uid())
-    and role = 'owner'::public.workspace_role
-    and exists (
-      select 1
-      from public.workspaces w
-      where w.id = workspace_id
-        and w.created_by = (select auth.uid())
-    )
+    role = 'owner'::public.workspace_role
+    and private.can_bootstrap_workspace_owner(workspace_id, user_id)
   )
   or private.is_workspace_owner(workspace_id)
   or (
