@@ -2,11 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
+import { createCampaignDraft } from "./actions";
 import styles from "../brand.module.css";
 
 type PageProps = {
   params: Promise<{ workspaceId: string; brandId: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; error?: string }>;
 };
 
 type Brand = {
@@ -22,6 +23,19 @@ type Brand = {
   company_name: string | null;
   legal_address: string | null;
   onboarding_completed_at: string | null;
+};
+
+type Campaign = {
+  id: string;
+  name: string;
+  status: string;
+  current_version_number: number;
+  updated_at: string;
+};
+
+const campaignErrors: Record<string, string> = {
+  "invalid-campaign": "Enter a campaign name between 1 and 200 characters.",
+  "campaign-create-failed": "The campaign could not be created. Your role may not allow edits in this workspace.",
 };
 
 export const dynamic = "force-dynamic";
@@ -40,7 +54,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
     redirect("/auth/sign-in");
   }
 
-  const [{ data: workspace }, { data: brandData }] = await Promise.all([
+  const [{ data: workspace }, { data: brandData }, { data: campaignData }] = await Promise.all([
     supabase.from("workspaces").select("id,name,slug").eq("id", workspaceId).maybeSingle(),
     supabase
       .from("brands")
@@ -48,6 +62,12 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
       .eq("workspace_id", workspaceId)
       .eq("id", brandId)
       .maybeSingle(),
+    supabase
+      .from("campaigns")
+      .select("id,name,status,current_version_number,updated_at")
+      .eq("workspace_id", workspaceId)
+      .eq("brand_id", brandId)
+      .order("updated_at", { ascending: false }),
   ]);
 
   if (!workspace || !brandData) {
@@ -55,7 +75,10 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
   }
 
   const brand = brandData as Brand;
+  const campaigns = (campaignData ?? []) as Campaign[];
   const initial = brand.name.slice(0, 1).toUpperCase();
+  const errorMessage = query.error ? campaignErrors[query.error] : null;
+  const boundCreateCampaign = createCampaignDraft.bind(null, workspaceId, brandId);
 
   return (
     <main className={styles.shell}>
@@ -66,13 +89,14 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
 
       <section className={styles.content}>
         {query.created === "1" ? <p className={styles.message}>Brand system created and tenant-isolated.</p> : null}
+        {errorMessage ? <p className={`${styles.message} ${styles.error}`}>{errorMessage}</p> : null}
         <p className={styles.eyebrow}>Brand system · {workspace.name}</p>
 
         <div className={styles.brandHero}>
           <div className={styles.brandSwatch} style={{ background: brand.primary_color }}>{initial}</div>
           <div>
             <h1 className={styles.title}>{brand.name}</h1>
-            <p className={styles.subtitle}>This is the controlled brand context Pagevelope will use for campaign creation, rendering, approvals and publishing.</p>
+            <p className={styles.subtitle}>This is the controlled brand context Pagevelope uses for campaign creation, rendering, approvals and publishing.</p>
           </div>
         </div>
 
@@ -105,6 +129,29 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
                 ))}
               </div>
             </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <h2>Campaigns</h2>
+                <p>Every save becomes an immutable version rather than replacing campaign history.</p>
+              </div>
+              {campaigns.length ? (
+                <div className={styles.metaGrid}>
+                  {campaigns.map((campaign) => (
+                    <Link
+                      className={styles.metaCard}
+                      href={`/builder?workspaceId=${encodeURIComponent(workspaceId)}&brandId=${encodeURIComponent(brandId)}&campaignId=${encodeURIComponent(campaign.id)}`}
+                      key={campaign.id}
+                    >
+                      <span>{campaign.status} · version {campaign.current_version_number}</span>
+                      <strong>{campaign.name} →</strong>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.hint}>No campaigns yet. Create the first draft from the production panel.</p>
+              )}
+            </section>
           </section>
 
           <aside className={styles.side}>
@@ -114,13 +161,16 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
                 <li><span>Workspace boundary</span><strong>Ready</strong></li>
                 <li><span>Identity tokens</span><strong>Ready</strong></li>
                 <li><span>Legal sender data</span><strong>{brand.company_name && brand.legal_address ? "Ready" : "Incomplete"}</strong></li>
-                <li><span>Logo asset</span><strong>Next</strong></li>
+                <li><span>Campaign history</span><strong>{campaigns.length ? `${campaigns.length} draft${campaigns.length === 1 ? "" : "s"}` : "Empty"}</strong></li>
               </ul>
             </div>
             <div className={styles.nextCard}>
-              <strong>Next: real campaign persistence</strong>
-              <p>The next build gate binds campaigns and immutable versions to this brand instead of the builder&apos;s demo state.</p>
-              <Link className={styles.nextButton} href="/builder">Preview current builder</Link>
+              <strong>Create a campaign</strong>
+              <p>Start a persisted draft. The builder will bind future saves to this workspace, brand and immutable version history.</p>
+              <form action={boundCreateCampaign}>
+                <input className={styles.input} name="name" type="text" maxLength={200} placeholder="September product launch" required />
+                <button className={styles.nextButton} type="submit">Create & open builder</button>
+              </form>
             </div>
           </aside>
         </div>
