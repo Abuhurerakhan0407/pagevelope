@@ -1,8 +1,60 @@
-import type { CampaignDocumentV1 } from "../../editor-schema/src/model.js";
+import type { CampaignBlock, CampaignDocumentV1, ImageValue } from "../../editor-schema/src/model.js";
 
 export interface OutputSafetyIssue {
-  code: "SCRIPT_TAG" | "JAVASCRIPT_URL" | "EVENT_HANDLER" | "UNSUBSCRIBE_HTML_MISSING" | "UNSUBSCRIBE_TEXT_MISSING" | "LEGAL_TEXT_MISSING";
+  code:
+    | "SCRIPT_TAG"
+    | "JAVASCRIPT_URL"
+    | "EVENT_HANDLER"
+    | "UNSUBSCRIBE_HTML_MISSING"
+    | "UNSUBSCRIBE_TEXT_MISSING"
+    | "LEGAL_TEXT_MISSING"
+    | "MOTION_GIF_MISSING"
+    | "MOTION_FALLBACK_MISSING";
   message: string;
+}
+
+function htmlContainsUrl(html: string, url: string): boolean {
+  return html.includes(url) || html.includes(url.replaceAll("&", "&amp;"));
+}
+
+function inspectMotionImage(image: ImageValue | undefined, html: string, issues: OutputSafetyIssue[]): void {
+  if (!image?.motion) return;
+
+  if (!htmlContainsUrl(html, image.src)) {
+    issues.push({
+      code: "MOTION_GIF_MISSING",
+      message: "Compiled HTML must contain every approved animated GIF asset.",
+    });
+  }
+
+  if (!htmlContainsUrl(html, image.motion.firstFrameSrc)) {
+    issues.push({
+      code: "MOTION_FALLBACK_MISSING",
+      message: "Compiled HTML must contain every approved static first-frame fallback asset.",
+    });
+  }
+}
+
+function inspectBlockMotion(block: CampaignBlock, html: string, issues: OutputSafetyIssue[]): void {
+  if (block.type === "header") {
+    inspectMotionImage(block.logo, html, issues);
+    return;
+  }
+  if (block.type === "hero") {
+    inspectMotionImage(block.image, html, issues);
+    return;
+  }
+  if (block.type === "image") {
+    inspectMotionImage(block.image, html, issues);
+    return;
+  }
+  if (block.type === "product-grid") {
+    block.products.forEach((product) => inspectMotionImage(product.image, html, issues));
+    return;
+  }
+  if (block.type === "columns") {
+    block.columns.forEach((column) => column.blocks.forEach((child) => inspectBlockMotion(child, html, issues)));
+  }
 }
 
 export function inspectCompiledOutput(
@@ -32,6 +84,8 @@ export function inspectCompiledOutput(
   if (!footer || !plainText.includes(footer.companyName) || !plainText.includes(footer.physicalAddress)) {
     issues.push({ code: "LEGAL_TEXT_MISSING", message: "Plain-text output must preserve company name and physical address." });
   }
+
+  campaign.blocks.forEach((block) => inspectBlockMotion(block, html, issues));
 
   return issues;
 }
