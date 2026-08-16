@@ -159,7 +159,7 @@
 
 .gateGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -311,12 +311,14 @@
   border-top: 1px solid rgba(15, 18, 33, 0.07);
 }
 
-.form label {
+.form label,
+.testSendForm label {
   display: grid;
   gap: 6px;
 }
 
-.form label > span {
+.form label > span,
+.testSendForm label > span {
   color: #4b5563;
   font-size: 11px;
   font-weight: 750;
@@ -324,7 +326,8 @@
 
 .form input,
 .form select,
-.form textarea {
+.form textarea,
+.testSendForm input {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #dedfec;
@@ -338,7 +341,8 @@
 
 .form input:focus,
 .form select:focus,
-.form textarea:focus {
+.form textarea:focus,
+.testSendForm input:focus {
   border-color: #a78bfa;
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.14);
 }
@@ -366,6 +370,13 @@
   color: #5b21b6;
 }
 
+.secondaryButton:disabled,
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  box-shadow: none;
+}
+
 .primaryButton {
   width: 100%;
   background: #6f5cfb;
@@ -373,10 +384,70 @@
   box-shadow: 0 12px 28px rgba(111, 92, 251, 0.24);
 }
 
-.primaryButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-  box-shadow: none;
+.testSendSection {
+  margin-top: 22px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(111, 92, 251, 0.16);
+  background: linear-gradient(180deg, #faf9ff 0%, #f7f8fc 100%);
+}
+
+.sectionCopy {
+  margin: -6px 0 0;
+  max-width: 720px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.testSendForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 18px;
+}
+
+.deliveryList {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.deliveryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 13px;
+  border-radius: 13px;
+  border: 1px solid rgba(15, 18, 33, 0.07);
+  background: white;
+}
+
+.deliveryRow > div:first-child,
+.deliveryMeta {
+  display: grid;
+  gap: 4px;
+}
+
+.deliveryRow strong {
+  font-size: 13px;
+}
+
+.deliveryRow span:not(.pass):not(.fail):not(.pending),
+.deliveryRow small,
+.emptyState {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.deliveryMeta {
+  justify-items: end;
+}
+
+.emptyState {
+  margin: 16px 0 0;
 }
 
 .side {
@@ -453,6 +524,12 @@
   line-height: 1.5;
 }
 
+@media (max-width: 1100px) {
+  .gateGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .gateGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -489,8 +566,18 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .twoCol {
+  .twoCol,
+  .testSendForm {
     grid-template-columns: 1fr;
+  }
+
+  .deliveryRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .deliveryMeta {
+    justify-items: start;
   }
 
   .panel,
@@ -499,6 +586,10 @@
   }
 
   .panel {
+    padding: 16px;
+  }
+
+  .testSendSection {
     padding: 16px;
   }
 }
