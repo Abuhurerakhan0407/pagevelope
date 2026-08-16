@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(3);
+select extensions.plan(4);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -81,12 +81,25 @@ select public.save_campaign_brief(
   'subtle'
 );
 
+select extensions.throws_ok(
+  $$delete from public.campaign_products
+    where campaign_id = '74300000-0000-4000-8000-000000000001'
+      and product_id = (select product_id from delete_product_state)$$,
+  '42501',
+  null,
+  'authenticated clients cannot delete campaign-product links outside the audited RPC'
+);
+
+reset role;
+
 select extensions.lives_ok(
   $$delete from public.campaign_products
     where campaign_id = '74300000-0000-4000-8000-000000000001'
       and product_id = (select product_id from delete_product_state)$$,
-  'direct campaign product deletion completes without NEW-record trigger errors'
+  'database-level campaign product deletion completes without NEW-record trigger errors'
 );
+
+set local role authenticated;
 
 select extensions.is(
   (select product_selection_completed_at from public.campaigns where id = '74300000-0000-4000-8000-000000000001'),
