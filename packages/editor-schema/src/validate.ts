@@ -1,4 +1,4 @@
-import type { CampaignBlock, CampaignDocumentV1, ImageValue } from "./model.js";
+import type { CampaignBlock, CampaignDocumentV1, GifMotionValue, ImageValue } from "./model.js";
 
 export interface ValidationIssue {
   path: string;
@@ -35,6 +35,48 @@ function optionalSafeUrl(value: unknown, path: string, issues: ValidationIssue[]
   return true;
 }
 
+function validatePositiveInteger(value: unknown, path: string, issues: ValidationIssue[], minimum = 1): boolean {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < minimum) {
+    issues.push({ path, message: `Expected integer greater than or equal to ${minimum}.` });
+    return false;
+  }
+  return true;
+}
+
+function validateMotion(value: unknown, imageSrc: unknown, path: string, issues: ValidationIssue[]): value is GifMotionValue {
+  if (!isRecord(value)) {
+    issues.push({ path, message: "Expected motion metadata object." });
+    return false;
+  }
+
+  let ok = true;
+  if (value.kind !== "gif") {
+    issues.push({ path: `${path}.kind`, message: "Only email-safe GIF motion is supported." });
+    ok = false;
+  }
+
+  const firstFrameOk = requiredString(value.firstFrameSrc, `${path}.firstFrameSrc`, issues)
+    && optionalSafeUrl(value.firstFrameSrc, `${path}.firstFrameSrc`, issues);
+  ok = firstFrameOk && ok;
+
+  if (typeof imageSrc === "string" && typeof value.firstFrameSrc === "string" && imageSrc === value.firstFrameSrc) {
+    issues.push({ path: `${path}.firstFrameSrc`, message: "First-frame fallback must be a separate static asset from the animated GIF." });
+    ok = false;
+  }
+
+  ok = optionalSafeUrl(value.previewVideoSrc, `${path}.previewVideoSrc`, issues) && ok;
+  ok = validatePositiveInteger(value.byteSize, `${path}.byteSize`, issues) && ok;
+  ok = validatePositiveInteger(value.frameCount, `${path}.frameCount`, issues, 2) && ok;
+  ok = validatePositiveInteger(value.durationMs, `${path}.durationMs`, issues) && ok;
+
+  if (value.loop !== true) {
+    issues.push({ path: `${path}.loop`, message: "Email motion must be an intentional looping GIF." });
+    ok = false;
+  }
+
+  return ok;
+}
+
 function validateImage(value: unknown, path: string, issues: ValidationIssue[]): value is ImageValue {
   if (!isRecord(value)) {
     issues.push({ path, message: "Expected image object." });
@@ -43,10 +85,13 @@ function validateImage(value: unknown, path: string, issues: ValidationIssue[]):
   const srcOk = requiredString(value.src, `${path}.src`, issues) && optionalSafeUrl(value.src, `${path}.src`, issues);
   const decorative = value.decorative === true;
   const altOk = decorative || requiredString(value.alt, `${path}.alt`, issues);
+  let widthOk = true;
   if (value.width !== undefined && (typeof value.width !== "number" || value.width < 1 || value.width > 1200)) {
     issues.push({ path: `${path}.width`, message: "Image width must be between 1 and 1200 pixels." });
+    widthOk = false;
   }
-  return srcOk && altOk;
+  const motionOk = value.motion === undefined || validateMotion(value.motion, value.src, `${path}.motion`, issues);
+  return srcOk && altOk && widthOk && motionOk;
 }
 
 function validateBlock(value: unknown, index: number, issues: ValidationIssue[]): value is CampaignBlock {
@@ -155,7 +200,9 @@ function validateBlock(value: unknown, index: number, issues: ValidationIssue[])
           if (!isRecord(child) || !["text", "image", "button"].includes(String(child.type))) {
             issues.push({ path: `${path}.columns[${columnIndex}].blocks[${childIndex}]`, message: "Only text, image, and button children are allowed in columns." });
             ok = false;
+            return;
           }
+          validateBlock(child, childIndex, issues);
         });
       });
       return ok;
