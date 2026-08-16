@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(17);
+select extensions.plan(18);
 
 -- Fixed UUIDs make failures easy to reproduce in CI.
 -- Users 1-5 belong to workspace A with one role each; user 6 owns workspace B;
