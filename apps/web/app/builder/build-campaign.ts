@@ -1,4 +1,4 @@
-import type { CampaignBlock, CampaignDocumentV1 } from "@pagevelope/editor-schema";
+import type { CampaignBlock, CampaignDocumentV1, HexColor } from "@pagevelope/editor-schema";
 
 export type BuilderBlockKind =
   | "header"
@@ -21,17 +21,64 @@ export interface BuilderBlock {
   cta?: string;
 }
 
-const PRODUCT_URL = "https://example.com/products/orbit";
-const HOME_URL = "https://example.com";
+export interface CampaignBuildContext {
+  campaignId: string;
+  campaignName: string;
+  locale: string;
+  subject: string;
+  preheader: string;
+  brand: {
+    name: string;
+    fontFamily: string;
+    primaryColor: string;
+    accentColor: string;
+    backgroundColor: string;
+    textColor: string;
+    websiteUrl?: string | null;
+    companyName?: string | null;
+    legalAddress?: string | null;
+  };
+}
 
-function toCampaignBlock(block: BuilderBlock): CampaignBlock {
+export const demoCampaignContext: CampaignBuildContext = {
+  campaignId: "campaign_orbit_visual_builder",
+  campaignName: "Orbit Bottle Launch",
+  locale: "en-IN",
+  subject: "Meet Orbit — hydration without the bulk",
+  preheader: "A lighter bottle, built for everyday carry.",
+  brand: {
+    name: "Northstar Goods",
+    fontFamily: "Arial, Helvetica, sans-serif",
+    primaryColor: "#6F5CFB",
+    accentColor: "#A78BFA",
+    backgroundColor: "#F5F3EE",
+    textColor: "#171717",
+    websiteUrl: "https://example.com",
+    companyName: "Northstar Goods",
+    legalAddress: "12 Market Road, Mumbai, Maharashtra 400001, India",
+  },
+};
+
+function homeUrl(context: CampaignBuildContext) {
+  return context.brand.websiteUrl || "https://example.com";
+}
+
+function productUrl(context: CampaignBuildContext) {
+  return `${homeUrl(context).replace(/\/$/, "")}/products/featured`;
+}
+
+function hex(value: string): HexColor {
+  return value as HexColor;
+}
+
+function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): CampaignBlock {
   switch (block.kind) {
     case "header":
       return {
         id: block.id,
         type: "header",
-        wordmark: block.title,
-        homeUrl: HOME_URL,
+        wordmark: block.title || context.brand.name,
+        homeUrl: homeUrl(context),
       };
     case "hero":
       return {
@@ -42,17 +89,17 @@ function toCampaignBlock(block: BuilderBlock): CampaignBlock {
         body: block.body,
         image: {
           src: "https://images.example.com/orbit.jpg",
-          alt: "Orbit insulated bottle",
+          alt: "Featured product campaign image",
           width: 520,
         },
         cta: block.cta
           ? {
               label: block.cta,
-              href: PRODUCT_URL,
+              href: productUrl(context),
             }
           : undefined,
         align: "left",
-        backgroundColor: "#EDE9FE",
+        backgroundColor: hex(context.brand.accentColor),
       };
     case "text":
       return {
@@ -78,7 +125,7 @@ function toCampaignBlock(block: BuilderBlock): CampaignBlock {
         type: "button",
         cta: {
           label: block.cta ?? block.title,
-          href: PRODUCT_URL,
+          href: productUrl(context),
         },
         align: "left",
       };
@@ -90,24 +137,24 @@ function toCampaignBlock(block: BuilderBlock): CampaignBlock {
         columns: 2,
         products: [
           {
-            id: `${block.id}-lilac`,
-            title: "Orbit / Lilac",
+            id: `${block.id}-one`,
+            title: "Featured product one",
             price: "₹2,499",
             image: {
-              src: "https://images.example.com/orbit-lilac.jpg",
-              alt: "Lilac Orbit bottle",
+              src: "https://images.example.com/product-one.jpg",
+              alt: "Featured product one",
             },
-            href: "https://example.com/products/orbit-lilac",
+            href: productUrl(context),
           },
           {
-            id: `${block.id}-ink`,
-            title: "Orbit / Ink",
+            id: `${block.id}-two`,
+            title: "Featured product two",
             price: "₹2,499",
             image: {
-              src: "https://images.example.com/orbit-ink.jpg",
-              alt: "Ink Orbit bottle",
+              src: "https://images.example.com/product-two.jpg",
+              alt: "Featured product two",
             },
-            href: "https://example.com/products/orbit-ink",
+            href: productUrl(context),
           },
         ],
       };
@@ -129,7 +176,7 @@ function toCampaignBlock(block: BuilderBlock): CampaignBlock {
         links: [
           {
             network: "instagram",
-            href: "https://example.com/instagram",
+            href: `${homeUrl(context).replace(/\/$/, "")}/instagram`,
             label: block.body?.trim() || "Instagram",
           },
         ],
@@ -138,33 +185,94 @@ function toCampaignBlock(block: BuilderBlock): CampaignBlock {
       return {
         id: block.id,
         type: "footer",
-        companyName: block.title,
-        physicalAddress: block.body ?? "Physical business address",
-        websiteUrl: HOME_URL,
-        privacyUrl: "https://example.com/privacy",
+        companyName: block.title || context.brand.companyName || context.brand.name,
+        physicalAddress: block.body || context.brand.legalAddress || "Physical business address",
+        websiteUrl: homeUrl(context),
+        privacyUrl: `${homeUrl(context).replace(/\/$/, "")}/privacy`,
       };
   }
 }
 
-export function buildCampaignDocument(blocks: BuilderBlock[]): CampaignDocumentV1 {
+export function buildCampaignDocument(
+  blocks: BuilderBlock[],
+  context: CampaignBuildContext = demoCampaignContext,
+): CampaignDocumentV1 {
   return {
     schemaVersion: "1.0.0",
-    id: "campaign_orbit_visual_builder",
-    name: "Orbit Bottle Launch",
-    locale: "en-IN",
-    subject: "Meet Orbit — hydration without the bulk",
-    preheader: "A lighter bottle, built for everyday carry.",
+    id: context.campaignId,
+    name: context.campaignName,
+    locale: context.locale,
+    subject: context.subject,
+    preheader: context.preheader,
     brand: {
-      name: "Northstar Goods",
-      fontFamily: "Arial, Helvetica, sans-serif",
+      name: context.brand.name,
+      fontFamily: context.brand.fontFamily,
       colors: {
-        background: "#F5F3EE",
+        background: hex(context.brand.backgroundColor),
         surface: "#FFFFFF",
-        text: "#171717",
+        text: hex(context.brand.textColor),
         muted: "#6B7280",
-        primary: "#6F5CFB",
+        primary: hex(context.brand.primaryColor),
       },
     },
-    blocks: blocks.map(toCampaignBlock),
+    blocks: blocks.map((block) => toCampaignBlock(block, context)),
   };
+}
+
+export function builderBlocksFromCampaignDocument(document: CampaignDocumentV1): BuilderBlock[] {
+  const blocks: BuilderBlock[] = [];
+
+  for (const block of document.blocks) {
+    switch (block.type) {
+      case "preheader":
+        break;
+      case "header":
+        blocks.push({ id: block.id, kind: "header", label: "Header", title: block.wordmark || document.brand.name });
+        break;
+      case "hero":
+        blocks.push({
+          id: block.id,
+          kind: "hero",
+          label: "Hero",
+          title: block.heading,
+          body: block.body,
+          cta: block.cta?.label,
+        });
+        break;
+      case "text":
+        blocks.push({ id: block.id, kind: "text", label: "Text", title: block.heading || "Text", body: block.body });
+        break;
+      case "image":
+        blocks.push({ id: block.id, kind: "image", label: "Image", title: "Campaign image", body: `Alt text: ${block.image.alt}` });
+        break;
+      case "button":
+        blocks.push({ id: block.id, kind: "button", label: "Button", title: block.cta.label, cta: block.cta.label });
+        break;
+      case "product-grid":
+        blocks.push({
+          id: block.id,
+          kind: "products",
+          label: "Product grid",
+          title: block.heading || "Featured products",
+          body: block.products.map((product) => `${product.title}${product.price ? ` · ${product.price}` : ""}`).join("\n"),
+        });
+        break;
+      case "divider":
+        blocks.push({ id: block.id, kind: "divider", label: "Divider", title: "Divider" });
+        break;
+      case "spacer":
+        blocks.push({ id: block.id, kind: "spacer", label: "Spacer", title: `${block.size}px spacer` });
+        break;
+      case "social":
+        blocks.push({ id: block.id, kind: "social", label: "Social", title: "Follow us", body: block.links[0]?.label || "Social" });
+        break;
+      case "footer":
+        blocks.push({ id: block.id, kind: "footer", label: "Footer", title: block.companyName, body: block.physicalAddress });
+        break;
+      case "columns":
+        break;
+    }
+  }
+
+  return blocks;
 }
