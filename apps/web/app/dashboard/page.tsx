@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
+import { createWorkspace } from "./actions";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./dashboard.module.css";
@@ -11,10 +12,21 @@ type Workspace = {
   created_at: string;
 };
 
+type DashboardPageProps = {
+  searchParams: Promise<{ error?: string; created?: string }>;
+};
+
+const errorMessages: Record<string, string> = {
+  "supabase-not-configured": "Workspace creation is unavailable until this environment is connected to Supabase.",
+  "invalid-workspace": "Enter a workspace name and use a valid URL slug.",
+  "workspace-create-failed": "We could not create that workspace. The slug may already be in use.",
+};
+
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const configured = Boolean(getSupabasePublicConfig());
+  const params = await searchParams;
 
   if (!configured) {
     return (
@@ -52,6 +64,8 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: true });
 
   const workspaces = (data ?? []) as Workspace[];
+  const errorMessage = params.error ? errorMessages[params.error] : null;
+  const createdMessage = params.created === "1" ? "Workspace created. You are its owner." : null;
 
   return (
     <main className={styles.shell}>
@@ -61,33 +75,78 @@ export default async function DashboardPage() {
       </header>
 
       <section className={styles.content}>
-        <p className={styles.eyebrow}>Your workspaces</p>
-        <h1 className={styles.title}>Welcome to Pagevelope.</h1>
-        <p className={styles.subtitle}>Workspace access is filtered by Supabase Row Level Security. Brands, campaigns, assets and audit history will inherit the same tenant boundary.</p>
+        <div className={styles.headingRow}>
+          <div>
+            <p className={styles.eyebrow}>Your workspaces</p>
+            <h1 className={styles.title}>Welcome to Pagevelope.</h1>
+            <p className={styles.subtitle}>Workspace access is filtered by Supabase Row Level Security. Brands, campaigns, assets and audit history inherit the same tenant boundary.</p>
+          </div>
+          <div className={styles.securityPill}>RLS protected</div>
+        </div>
 
-        {error ? (
-          <div className={styles.emptyCard}>
-            <h2>Could not load workspaces</h2>
-            <p>The authenticated session is valid, but the workspace query failed. No cross-tenant fallback is used.</p>
-          </div>
-        ) : workspaces.length ? (
-          <div className={styles.grid}>
-            {workspaces.map((workspace) => (
-              <article className={styles.card} key={workspace.id}>
-                <div className={styles.cardTop}>
-                  <h2>{workspace.name}</h2>
-                  <span className={styles.badge}>Workspace</span>
+        {errorMessage ? <p className={`${styles.message} ${styles.error}`}>{errorMessage}</p> : null}
+        {createdMessage ? <p className={styles.message}>{createdMessage}</p> : null}
+
+        <div className={styles.workspaceLayout}>
+          <section>
+            <div className={styles.sectionHeading}>
+              <div>
+                <p className={styles.sectionLabel}>Available now</p>
+                <h2>Choose a workspace</h2>
+              </div>
+              <span>{workspaces.length} total</span>
+            </div>
+
+            {error ? (
+              <div className={styles.emptyCard}>
+                <h2>Could not load workspaces</h2>
+                <p>The authenticated session is valid, but the workspace query failed. No cross-tenant fallback is used.</p>
+              </div>
+            ) : workspaces.length ? (
+              <div className={styles.grid}>
+                {workspaces.map((workspace) => (
+                  <article className={styles.card} key={workspace.id}>
+                    <div className={styles.cardTop}>
+                      <h2>{workspace.name}</h2>
+                      <span className={styles.badge}>Workspace</span>
+                    </div>
+                    <p className={styles.slug}>/{workspace.slug}</p>
+                    <div className={styles.cardMeta}>
+                      <span>Brands</span>
+                      <strong>Next setup step</strong>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyCard}>
+                <h2>No workspace yet</h2>
+                <p>Create your first workspace to establish the tenant boundary for brands, campaigns, assets, approvals and publishing.</p>
+              </div>
+            )}
+          </section>
+
+          <aside className={styles.createCard}>
+            <p className={styles.sectionLabel}>New workspace</p>
+            <h2>Start your production space.</h2>
+            <p className={styles.createCopy}>Use your agency, brand team, or company name. Pagevelope creates the workspace, owner membership, and audit event atomically.</p>
+            <form className={styles.form} action={createWorkspace}>
+              <label className={styles.label}>
+                Workspace name
+                <input className={styles.input} name="name" type="text" maxLength={120} placeholder="Northstar Studio" required />
+              </label>
+              <label className={styles.label}>
+                Workspace URL slug
+                <div className={styles.slugInputWrap}>
+                  <span>pagevelope/</span>
+                  <input className={styles.slugInput} name="slug" type="text" maxLength={80} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="northstar-studio" />
                 </div>
-                <p className={styles.slug}>/{workspace.slug}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.emptyCard}>
-            <h2>No workspace yet</h2>
-            <p>Your account is authenticated. Workspace creation and onboarding is the next gated platform step.</p>
-          </div>
-        )}
+              </label>
+              <p className={styles.hint}>Leave the slug blank and Pagevelope will generate it from the workspace name.</p>
+              <button className={styles.primaryButton} type="submit">Create workspace</button>
+            </form>
+          </aside>
+        </div>
       </section>
     </main>
   );
