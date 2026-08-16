@@ -260,7 +260,10 @@ declare
   remaining_owner_count integer;
 begin
   if old.role <> 'owner'::public.workspace_role then
-    return coalesce(new, old);
+    if tg_op = 'DELETE' then
+      return old;
+    end if;
+    return new;
   end if;
 
   if tg_op = 'UPDATE' and new.role = 'owner'::public.workspace_role then
@@ -278,7 +281,10 @@ begin
     raise exception 'A workspace must keep at least one owner.';
   end if;
 
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
 end;
 $$;
 
@@ -331,8 +337,6 @@ alter table public.campaign_versions enable row level security;
 alter table public.assets enable row level security;
 alter table public.audit_events enable row level security;
 
--- Profiles: users can read/update themselves. Shared profile discovery can be added later
--- without weakening workspace isolation.
 create policy profiles_select_self
 on public.profiles for select
 to authenticated
@@ -344,8 +348,6 @@ to authenticated
 using (id = (select auth.uid()))
 with check (id = (select auth.uid()));
 
--- Workspace creation is self-attributed. Creator access exists only to bootstrap the
--- first owner membership; membership is the steady-state authorization boundary.
 create policy workspaces_insert_creator
 on public.workspaces for insert
 to authenticated
@@ -477,7 +479,6 @@ on public.campaigns for delete
 to authenticated
 using (private.can_admin_workspace(workspace_id));
 
--- Campaign versions are append-only for authenticated application users.
 create policy campaign_versions_select_member
 on public.campaign_versions for select
 to authenticated
@@ -509,8 +510,6 @@ on public.assets for delete
 to authenticated
 using (private.can_admin_workspace(workspace_id));
 
--- Audit events are append-only. All members can append their own actor identity;
--- only owners/admins can read the workspace audit stream.
 create policy audit_events_select_admin
 on public.audit_events for select
 to authenticated
@@ -524,7 +523,6 @@ with check (
   and actor_user_id = (select auth.uid())
 );
 
--- Explicit grants pair with RLS. Anonymous clients receive no application-table access.
 revoke all on public.profiles from anon;
 revoke all on public.workspaces from anon;
 revoke all on public.workspace_memberships from anon;
@@ -544,8 +542,6 @@ grant select, insert on public.campaign_versions to authenticated;
 grant select, insert, delete on public.assets to authenticated;
 grant select, insert on public.audit_events to authenticated;
 
--- Private originals bucket. Object names MUST begin with the workspace UUID:
--- <workspace_uuid>/<brand_or_campaign_scope>/<file>
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'pagevelope-originals',
@@ -575,8 +571,6 @@ with check (
   and private.can_edit_workspace(private.path_workspace_id(name))
 );
 
--- Originals are immutable through the authenticated client: no UPDATE policy.
--- Only workspace admins/owners can delete an original object.
 create policy pagevelope_originals_delete_admin
 on storage.objects for delete
 to authenticated
