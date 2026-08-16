@@ -18,11 +18,27 @@ export interface LinkValue {
   href: string;
 }
 
+/**
+ * Safe motion is deliberately constrained to email-compatible animated GIFs.
+ * The first-frame asset is stored separately so Pagevelope can prove the static
+ * fallback remains meaningful before a release is allowed to publish.
+ */
+export interface GifMotionValue {
+  kind: "gif";
+  firstFrameSrc: string;
+  previewVideoSrc?: string;
+  byteSize: number;
+  frameCount: number;
+  durationMs: number;
+  loop: true;
+}
+
 export interface ImageValue {
   src: string;
   alt: string;
   width?: number;
   decorative?: boolean;
+  motion?: GifMotionValue;
 }
 
 export interface BaseBlock { id: string; }
