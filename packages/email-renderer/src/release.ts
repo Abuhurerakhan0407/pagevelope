@@ -5,6 +5,7 @@ import { runPreflight, type QaReport } from "../../email-qa/src/preflight.js";
 import { validateCampaignDocument } from "../../editor-schema/src/validate.js";
 import type { CampaignDocumentV1 } from "../../editor-schema/src/model.js";
 import { compileMjmlStrict, MJML_COMPILER_VERSION } from "./compile.js";
+import { collectMotionEvidence, type MotionEvidenceSummary } from "./motion-evidence.js";
 import { assertSafeCompiledOutput } from "./output-safety.js";
 import { campaignToPlainText } from "./plain-text.js";
 import { stableStringify } from "./stable.js";
@@ -31,6 +32,7 @@ export interface CampaignReleaseManifest {
     validationLevel: "strict";
   };
   qa: QaReport;
+  motion: MotionEvidenceSummary;
   sourceFingerprint: string;
   files: ReleaseFileDescriptor[];
 }
@@ -85,6 +87,7 @@ export async function renderCampaignRelease(input: unknown): Promise<CampaignRel
   const plainText = campaignToPlainText(source);
   const compiled = await compileMjmlStrict(mjml);
   const html = compiled.html;
+  const motion = collectMotionEvidence(source);
 
   assertSafeCompiledOutput(source, html, plainText);
 
@@ -103,6 +106,7 @@ export async function renderCampaignRelease(input: unknown): Promise<CampaignRel
     rendererVersion: RELEASE_RENDERER_VERSION,
     compiler: compiled.compiler,
     qa,
+    motion,
     sourceFingerprint: sha256(sourceJson),
     files
   };
