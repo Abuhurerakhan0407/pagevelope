@@ -4,7 +4,7 @@ Updated: 16 August 2026
 
 ## Active phase
 
-Production email engine hardening — deterministic renderer, release bundle, and compatibility fixtures.
+Supabase SaaS foundation — authentication boundary, workspaces, roles, tenant-isolated RLS, private originals, and audit events.
 
 ## Phase 0 — CLOSED
 
@@ -19,29 +19,59 @@ Production email engine hardening — deterministic renderer, release bundle, an
 - Production secrets remain unavailable to coding agents.
 - Software Factory remains disabled for production orchestration.
 
-## Production renderer milestone — v1 merged
+## Production renderer gate — CLOSED
 
-- MJML compiler pinned to `5.4.0`.
-- Controlled MJML compiles under strict validation.
-- Campaign source is validated before release.
-- Blocking QA prevents release.
-- Release bundle contains canonical source JSON, MJML, compiled HTML, plain text, and a manifest.
+- MJML compiler pinned to `5.4.0` and strict validation enabled.
+- Controlled campaign JSON compiles to production MJML/HTML/plain text.
+- Release bundle contains canonical source JSON, MJML, compiled HTML, plain text, and manifest.
 - Release manifest records SHA-256 fingerprints and compiler metadata.
-- Renderer determinism and fail-closed behavior are covered by tests.
-- High-severity production dependency audit is now a permanent CI gate.
-- Vulnerable transitive PostCSS and sharp releases used by the current stable Next.js package are overridden to patched versions and verified by CI.
-- PR #2 merged as commit `4034045` and Vercel reported success.
+- Final HTML safety checks block executable markup and unsafe output.
+- Legal address and Klaviyo unsubscribe requirements are preserved.
+- Images-off essential-content behavior is covered by the renderer suite.
+- Determinism is proven across a 20-campaign fixture matrix.
+- High-severity production dependency audit is a permanent CI gate.
+
+## Visual Builder → renderer pipeline — CLOSED
+
+- Professional visual builder v1 is live.
+- Blocks and layers map into `CampaignDocumentV1`.
+- Current builder state renders through the deterministic server-side MJML release renderer.
+- Production HTML can be previewed inside the builder.
+- Renderer version, QA result, HTML bytes, and source fingerprint are surfaced.
+- HTML fallback download is available only after a successful render.
+- Edited campaigns invalidate stale rendered output.
+- Publish remains fail-closed behind approval and Inbox Lab gates.
+- PR #5 merged as commit `44d5f5b` with green CI and successful Vercel deployment.
+
+## Supabase tenant foundation — IN PROGRESS
+
+Authored on an isolated branch, not applied to production:
+
+- workspace roles: owner, admin, editor, reviewer, viewer;
+- profiles, workspaces, memberships, brands, campaigns, immutable campaign versions, asset metadata, audit events;
+- workspace-aware foreign keys and indexes;
+- row-level security on every application table;
+- private security-definer authorization helpers;
+- last-owner protection;
+- anonymous table access revoked;
+- private `pagevelope-originals` Storage bucket contract;
+- immutable original asset update boundary;
+- static migration security-contract tests;
+- migration and role/storage documentation.
 
 ## Current gate
 
-Before moving into broad backend work:
+Before production database connection or migration application:
 
-- expand the deterministic fixture suite toward the 20-fixture renderer gate;
-- add production HTML normalization/sanitization assertions;
-- prove images-off essential-content behavior;
-- prove legal/unsubscribe requirements across fixtures;
-- keep manual-repair target below 10% once real pilot emails are tested.
+- pass repository CI with the migration contract tests;
+- run the migration against a disposable/local Supabase database once the Supabase CLI/project connection is available;
+- add adversarial RLS tests using at least two users and two workspaces;
+- verify owner/admin/editor/reviewer/viewer behavior;
+- verify private Storage cross-tenant isolation;
+- integrate the Next.js Supabase SSR auth client with no production secrets in source control.
+
+Database migrations may be authored and tested by agents. **Production migration application remains human-controlled.**
 
 ## Next platform milestone
 
-After the renderer gate is credible, build the Supabase SaaS foundation: authentication, organizations/workspaces, roles, tenant-isolated RLS, private originals, and audit events. Database migrations may be authored and tested by agents but production application remains human-controlled.
+After the tenant gate is proven, connect authentication and onboarding in the web app: sign in → create/join workspace → brand setup → campaign persistence/versioning. Then connect the existing Visual Builder to real workspace data instead of demo state.
