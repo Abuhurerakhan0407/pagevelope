@@ -53,77 +53,45 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000
 set local role authenticated;
 
 select extensions.lives_ok(
-  $$update release_test_state
-    set candidate_id = public.create_release_candidate(
-      '81000000-0000-4000-8000-000000000001',
-      '81200000-0000-4000-8000-000000000001',
-      1,
-      repeat('a', 64),
-      repeat('b', 64),
-      '0.2.0',
-      'PASS',
-      '{"qa":{"status":"PASS"},"rendererVersion":"0.2.0"}'::jsonb
-    )$$,
+  $$update release_test_state set candidate_id = public.create_release_candidate(
+    '81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001',
+    1, repeat('a', 64), repeat('b', 64), '0.2.0', 'PASS',
+    '{"qa":{"status":"PASS"},"rendererVersion":"0.2.0"}'::jsonb
+  )$$,
   'editor can create a release candidate from the current immutable version'
 );
-
 select extensions.is(
   (select status from public.campaigns where id = '81200000-0000-4000-8000-000000000001'),
   'review'::public.campaign_status,
   'release candidate moves the campaign into review'
 );
-
 select extensions.is(
-  (select count(*) from public.campaign_release_candidates),
-  1::bigint,
+  (select count(*) from public.campaign_release_candidates), 1::bigint,
   'release candidate is persisted for the tenant'
 );
-
 select extensions.throws_ok(
   $$select public.create_release_candidate(
-      '81000000-0000-4000-8000-000000000001',
-      '81200000-0000-4000-8000-000000000001',
-      1, repeat('a', 64), repeat('c', 64), '0.2.0', 'BLOCK',
-      '{"qa":{"status":"BLOCK"}}'::jsonb
-    )$$,
-  '23514',
-  null,
-  'blocking QA cannot become a release candidate'
+    '81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001',
+    1, repeat('a', 64), repeat('c', 64), '0.2.0', 'BLOCK', '{"qa":{"status":"BLOCK"}}'::jsonb
+  )$$, '23514', null, 'blocking QA cannot become a release candidate'
 );
-
 select extensions.throws_ok(
   $$select public.create_release_candidate(
-      '81000000-0000-4000-8000-000000000001',
-      '81200000-0000-4000-8000-000000000001',
-      1, repeat('f', 64), repeat('c', 64), '0.2.0', 'PASS',
-      '{"qa":{"status":"PASS"}}'::jsonb
-    )$$,
-  '22023',
-  null,
-  'release candidate cannot lie about the source fingerprint'
+    '81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001',
+    1, repeat('f', 64), repeat('c', 64), '0.2.0', 'PASS', '{"qa":{"status":"PASS"}}'::jsonb
+  )$$, '22023', null, 'release candidate cannot lie about the source fingerprint'
 );
-
 select extensions.throws_ok(
   $$select public.record_campaign_approval(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'approved'::public.approval_decision,
-      'Editor must not approve.'
-    )$$,
-  '42501',
-  null,
-  'editor cannot approve a release candidate'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'approved'::public.approval_decision, 'Editor must not approve.'
+  )$$, '42501', null, 'editor cannot approve a release candidate'
 );
-
 select extensions.throws_ok(
   $$select public.record_inbox_evidence(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'gmail-web', 'manual', 'pass'::public.inbox_check_status, '', ''
-    )$$,
-  '42501',
-  null,
-  'editor cannot manufacture inbox evidence'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'gmail-web', 'manual', 'pass'::public.inbox_check_status, '', ''
+  )$$, '42501', null, 'editor cannot manufacture inbox evidence'
 );
 
 reset role;
@@ -132,133 +100,90 @@ set local role authenticated;
 
 select extensions.lives_ok(
   $$select public.record_inbox_evidence(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'gmail-web', 'manual', 'pass'::public.inbox_check_status,
-      'https://evidence.example/gmail', 'Manual assisted-pilot evidence.'
-    )$$,
-  'reviewer can record Gmail evidence'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'gmail-web', 'manual', 'pass'::public.inbox_check_status,
+    'https://evidence.example/gmail', 'Manual assisted-pilot evidence.'
+  )$$, 'reviewer can record Gmail evidence'
 );
-
 select extensions.lives_ok(
   $$select public.record_inbox_evidence(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'apple-mail', 'manual', 'pass'::public.inbox_check_status,
-      'https://evidence.example/apple', 'Manual assisted-pilot evidence.'
-    )$$,
-  'reviewer can record Apple Mail evidence'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'apple-mail', 'manual', 'pass'::public.inbox_check_status,
+    'https://evidence.example/apple', 'Manual assisted-pilot evidence.'
+  )$$, 'reviewer can record Apple Mail evidence'
 );
-
 select extensions.is(
-  (public.release_candidate_readiness(
-    '81000000-0000-4000-8000-000000000001',
-    (select candidate_id from release_test_state)
-  ) ->> 'ready')::boolean,
-  false,
-  'release remains blocked while a required inbox client is missing'
+  (public.release_candidate_readiness('81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)) ->> 'ready')::boolean,
+  false, 'release remains blocked while a required inbox client is missing'
 );
-
 select extensions.lives_ok(
   $$select public.record_inbox_evidence(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'outlook-windows', 'manual', 'pass'::public.inbox_check_status,
-      'https://evidence.example/outlook', 'Manual assisted-pilot evidence.'
-    )$$,
-  'reviewer can record Outlook Windows evidence'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'outlook-windows', 'manual', 'pass'::public.inbox_check_status,
+    'https://evidence.example/outlook', 'Manual assisted-pilot evidence.'
+  )$$, 'reviewer can record Outlook Windows evidence'
 );
-
 select extensions.is(
-  (public.release_candidate_readiness(
-    '81000000-0000-4000-8000-000000000001',
-    (select candidate_id from release_test_state)
-  ) ->> 'passed_client_count')::integer,
-  3,
-  'all required inbox clients are counted only after evidence exists'
+  (public.release_candidate_readiness('81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)) ->> 'passed_client_count')::integer,
+  3, 'all required inbox clients are counted only after evidence exists'
 );
-
 select extensions.lives_ok(
   $$select public.record_campaign_approval(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'approved'::public.approval_decision,
-      'Approved for assisted pilot.'
-    )$$,
-  'reviewer can create an immutable approval decision'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'approved'::public.approval_decision, 'Approved for assisted pilot.'
+  )$$, 'reviewer can create an immutable approval decision'
 );
-
 select extensions.is(
-  (public.release_candidate_readiness(
-    '81000000-0000-4000-8000-000000000001',
-    (select candidate_id from release_test_state)
-  ) ->> 'ready')::boolean,
-  true,
-  'release becomes ready only after inbox evidence and approval both pass'
+  (public.release_candidate_readiness('81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)) ->> 'ready')::boolean,
+  true, 'release becomes ready only after inbox evidence and approval both pass'
 );
-
 select extensions.lives_ok(
   $$select public.approve_release_candidate(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state)
-    )$$,
-  'ready release candidate can atomically approve the campaign'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)
+  )$$, 'ready release candidate can atomically approve the campaign'
 );
-
 select extensions.is(
   (select status from public.campaigns where id = '81200000-0000-4000-8000-000000000001'),
   'approved'::public.campaign_status,
   'approved release advances campaign status but does not publish it'
 );
 
+-- Audit logs are deliberately admin/owner-visible, not reviewer-visible. Inspect as the
+-- database test owner so this assertion proves the event exists without weakening RLS.
+reset role;
 select extensions.is(
   (select count(*) from public.audit_events where action = 'campaign.approved'),
   1::bigint,
   'campaign approval is audit logged'
 );
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000003"}', true);
+set local role authenticated;
 
 select extensions.throws_ok(
   $$select public.record_campaign_approval(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state),
-      'approved'::public.approval_decision,
-      'Attempt to rewrite immutable reviewer decision.'
-    )$$,
-  '23505',
-  null,
-  'same reviewer cannot rewrite an immutable decision'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state),
+    'approved'::public.approval_decision, 'Attempt to rewrite immutable reviewer decision.'
+  )$$, '23505', null, 'same reviewer cannot rewrite an immutable decision'
 );
 
 reset role;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000004"}', true);
 set local role authenticated;
-
 select extensions.is(
   (select count(*) from public.campaign_release_candidates where id = (select candidate_id from release_test_state)),
   0::bigint,
   'other tenant cannot read release candidates through RLS'
 );
-
 select extensions.throws_ok(
   $$select public.release_candidate_readiness(
-      '81000000-0000-4000-8000-000000000001',
-      (select candidate_id from release_test_state)
-    )$$,
-  '42501',
-  null,
-  'other tenant cannot inspect release readiness'
+    '81000000-0000-4000-8000-000000000001', (select candidate_id from release_test_state)
+  )$$, '42501', null, 'other tenant cannot inspect release readiness'
 );
-
 select extensions.throws_ok(
   $$select public.create_release_candidate(
-      '81000000-0000-4000-8000-000000000001',
-      '81200000-0000-4000-8000-000000000001',
-      1, repeat('a', 64), repeat('e', 64), '0.2.0', 'PASS',
-      '{"qa":{"status":"PASS"}}'::jsonb
-    )$$,
-  '42501',
-  null,
-  'other tenant cannot create a release candidate in this workspace'
+    '81000000-0000-4000-8000-000000000001', '81200000-0000-4000-8000-000000000001',
+    1, repeat('a', 64), repeat('e', 64), '0.2.0', 'PASS', '{"qa":{"status":"PASS"}}'::jsonb
+  )$$, '42501', null, 'other tenant cannot create a release candidate in this workspace'
 );
 
 reset role;
