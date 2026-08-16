@@ -1,21 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { buildCampaignDocument } from "./build-campaign";
+import { useEffect, useMemo, useState } from "react";
+import type { CampaignDocumentV1 } from "@pagevelope/editor-schema";
+import {
+  buildCampaignDocument,
+  builderBlocksFromCampaignDocument,
+  demoCampaignContext,
+  type BuilderBlock,
+  type BuilderBlockKind,
+  type CampaignBuildContext,
+} from "./build-campaign";
 import styles from "./builder.module.css";
 
 type ViewMode = "desktop" | "mobile" | "images-off" | "rendered";
-type BlockKind = "header" | "hero" | "text" | "image" | "button" | "products" | "divider" | "spacer" | "social" | "footer";
-
-type CanvasBlock = {
-  id: string;
-  kind: BlockKind;
-  label: string;
-  title: string;
-  body?: string;
-  cta?: string;
-};
+type BlockKind = BuilderBlockKind;
+type CanvasBlock = BuilderBlock;
 
 type RenderResult = {
   html: string;
@@ -30,6 +30,41 @@ type RenderResult = {
     };
     files: Array<{ name: string; bytes: number; sha256: string }>;
   };
+};
+
+type CampaignHydration = {
+  campaign: {
+    id: string;
+    workspace_id: string;
+    brand_id: string;
+    name: string;
+    status: string;
+    schema_version: string;
+    current_version_number: number;
+  };
+  brand: {
+    id: string;
+    name: string;
+    primary_color: string;
+    accent_color: string;
+    background_color: string;
+    text_color: string;
+    font_family: string;
+    website_url: string | null;
+    company_name: string | null;
+    legal_address: string | null;
+  };
+  latestVersion: {
+    version_number: number;
+    source_json: CampaignDocumentV1;
+    source_sha256: string;
+  } | null;
+};
+
+type PersistenceTarget = {
+  workspaceId: string;
+  brandId: string;
+  campaignId: string;
 };
 
 const initialBlocks: CanvasBlock[] = [
@@ -100,6 +135,42 @@ function makeBlock(kind: BlockKind, label: string): CanvasBlock {
   };
 }
 
+function blocksForContext(context: CampaignBuildContext): CanvasBlock[] {
+  return initialBlocks.map((block) => {
+    if (block.kind === "header") return { ...block, title: context.brand.name.toUpperCase() };
+    if (block.kind === "footer") {
+      return {
+        ...block,
+        title: context.brand.companyName || context.brand.name,
+        body: context.brand.legalAddress || "Physical business address",
+      };
+    }
+    if (block.kind === "hero") return { ...block, title: context.campaignName, body: "Write one clear reason this campaign matters now." };
+    return { ...block };
+  });
+}
+
+function buildContextFromHydration(payload: CampaignHydration): CampaignBuildContext {
+  return {
+    campaignId: payload.campaign.id,
+    campaignName: payload.campaign.name,
+    locale: "en-IN",
+    subject: payload.campaign.name,
+    preheader: `A new campaign from ${payload.brand.name}.`,
+    brand: {
+      name: payload.brand.name,
+      fontFamily: payload.brand.font_family,
+      primaryColor: payload.brand.primary_color,
+      accentColor: payload.brand.accent_color,
+      backgroundColor: payload.brand.background_color,
+      textColor: payload.brand.text_color,
+      websiteUrl: payload.brand.website_url,
+      companyName: payload.brand.company_name,
+      legalAddress: payload.brand.legal_address,
+    },
+  };
+}
+
 export default function BuilderPage() {
   const [blocks, setBlocks] = useState<CanvasBlock[]>(initialBlocks);
   const [selectedId, setSelectedId] = useState("hero-1");
@@ -109,6 +180,60 @@ export default function BuilderPage() {
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderError, setRenderError] = useState("");
+  const [campaignContext, setCampaignContext] = useState<CampaignBuildContext>(demoCampaignContext);
+  const [persistenceTarget, setPersistenceTarget] = useState<PersistenceTarget | null>(null);
+  const [currentVersion, setCurrentVersion] = useState(0);
+  const [hydrationState, setHydrationState] = useState<"demo" | "loading" | "ready" | "error">("demo");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "error">("idle");
+  const [persistenceError, setPersistenceError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const workspaceId = params.get("workspaceId")?.trim() || "";
+    const brandId = params.get("brandId")?.trim() || "";
+    const campaignId = params.get("campaignId")?.trim() || "";
+
+    if (!workspaceId || !brandId || !campaignId) return;
+
+    const target = { workspaceId, brandId, campaignId };
+    setPersistenceTarget(target);
+    setHydrationState("loading");
+    setPersistenceError("");
+
+    const controller = new AbortController();
+    fetch(`/api/campaigns/${encodeURIComponent(campaignId)}?workspaceId=${encodeURIComponent(workspaceId)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const payload = (await response.json()) as CampaignHydration | { error?: string };
+        if (!response.ok || !("campaign" in payload)) {
+          throw new Error("error" in payload && payload.error ? payload.error : "Campaign could not be loaded.");
+        }
+        return payload;
+      })
+      .then((payload) => {
+        const context = buildContextFromHydration(payload);
+        setCampaignContext(context);
+        setCurrentVersion(payload.campaign.current_version_number);
+
+        const restored = payload.latestVersion?.source_json
+          ? builderBlocksFromCampaignDocument(payload.latestVersion.source_json)
+          : blocksForContext(context);
+        const usableBlocks = restored.length ? restored : blocksForContext(context);
+        setBlocks(usableBlocks);
+        setSelectedId(usableBlocks.find((block) => block.kind === "hero")?.id ?? usableBlocks[0].id);
+        setSaved(Boolean(payload.latestVersion));
+        setHydrationState("ready");
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setHydrationState("error");
+        setPersistenceError(error instanceof Error ? error.message : "Campaign could not be loaded.");
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const selected = useMemo(
     () => blocks.find((block) => block.id === selectedId) ?? blocks[0],
@@ -118,9 +243,12 @@ export default function BuilderPage() {
   const footerCount = blocks.filter((block) => block.kind === "footer").length;
   const localGatePassed = footerCount === 1;
   const qaStatus = renderResult?.manifest.qa.status ?? (localGatePassed ? "PASS" : "BLOCK");
+  const isPersisted = Boolean(persistenceTarget);
 
   function markDirty() {
     setSaved(false);
+    setSaveState("idle");
+    setPersistenceError("");
     setRenderState("idle");
     setRenderResult(null);
     setRenderError("");
@@ -170,8 +298,41 @@ export default function BuilderPage() {
     markDirty();
   }
 
-  function saveCampaign() {
-    setSaved(true);
+  async function saveCampaign() {
+    if (!persistenceTarget) {
+      setSaved(true);
+      return;
+    }
+    if (hydrationState !== "ready" || saveState === "saving") return;
+
+    setSaveState("saving");
+    setPersistenceError("");
+
+    try {
+      const source = buildCampaignDocument(blocks, campaignContext);
+      const response = await fetch(`/api/campaigns/${encodeURIComponent(persistenceTarget.campaignId)}/versions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId: persistenceTarget.workspaceId,
+          expectedVersion: currentVersion,
+          source,
+        }),
+      });
+      const payload = (await response.json()) as { version?: number; sourceSha256?: string; error?: string; code?: string };
+      if (!response.ok || typeof payload.version !== "number") {
+        throw new Error(payload.error || "Campaign could not be saved.");
+      }
+
+      setCurrentVersion(payload.version);
+      setSaved(true);
+      setSaveState("idle");
+    } catch (error) {
+      setSaved(false);
+      setSaveState("error");
+      setPersistenceError(error instanceof Error ? error.message : "Campaign could not be saved.");
+      setQaOpen(true);
+    }
   }
 
   async function renderProduction() {
@@ -182,7 +343,7 @@ export default function BuilderPage() {
       const response = await fetch("/api/render", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildCampaignDocument(blocks)),
+        body: JSON.stringify(buildCampaignDocument(blocks, campaignContext)),
       });
       const payload = (await response.json()) as RenderResult | { error?: string };
 
@@ -208,35 +369,45 @@ export default function BuilderPage() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "orbit-bottle-launch.html";
+    anchor.download = `${campaignContext.campaignName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "pagevelope-campaign"}.html`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
   }
 
+  const saveLabel = hydrationState === "loading"
+    ? "Loading…"
+    : saveState === "saving"
+      ? "Saving…"
+      : saved
+        ? isPersisted ? `Saved · v${currentVersion}` : "Saved"
+        : "Unsaved changes";
+
   return (
     <main className={styles.shell}>
       <header className={styles.topbar}>
         <div className={styles.topLeft}>
-          <Link className={styles.brand} href="/" aria-label="Back to Pagevelope home">
+          <Link className={styles.brand} href={isPersisted ? "/dashboard" : "/"} aria-label="Back to Pagevelope">
             <span className={styles.brandMark}>P</span>
             <span>Pagevelope</span>
           </Link>
           <span className={styles.crumb}>/</span>
           <div>
-            <strong className={styles.campaignName}>Orbit Bottle Launch</strong>
-            <span className={styles.version}>Draft · schema v1</span>
+            <strong className={styles.campaignName}>{campaignContext.campaignName}</strong>
+            <span className={styles.version}>{isPersisted ? `Draft · version ${currentVersion}` : "Demo · schema v1"}</span>
           </div>
         </div>
 
         <div className={styles.topActions}>
-          <span className={saved ? styles.saved : styles.unsaved}>{saved ? "Saved" : "Unsaved changes"}</span>
+          <span className={saved ? styles.saved : styles.unsaved}>{saveLabel}</span>
           <button className={styles.iconButton} type="button" onClick={() => moveSelected(-1)} title="Move selected block up">↑</button>
           <button className={styles.iconButton} type="button" onClick={() => moveSelected(1)} title="Move selected block down">↓</button>
           <button className={styles.secondaryButton} type="button" onClick={() => setQaOpen((value) => !value)}>Inbox Lab</button>
-          <button className={styles.secondaryButton} type="button" onClick={saveCampaign}>Save</button>
-          <button className={styles.secondaryButton} type="button" onClick={renderProduction} disabled={renderState === "rendering"}>
+          <button className={styles.secondaryButton} type="button" onClick={saveCampaign} disabled={saveState === "saving" || hydrationState === "loading"}>
+            {saveState === "saving" ? "Saving…" : "Save version"}
+          </button>
+          <button className={styles.secondaryButton} type="button" onClick={renderProduction} disabled={renderState === "rendering" || hydrationState === "loading"}>
             {renderState === "rendering" ? "Rendering…" : "Render HTML"}
           </button>
           {renderResult ? <button className={styles.secondaryButton} type="button" onClick={downloadHtml}>Download HTML</button> : null}
@@ -296,13 +467,13 @@ export default function BuilderPage() {
                   {mode === "desktop" ? "Desktop" : mode === "mobile" ? "Mobile" : "Images off"}
                 </button>
               ))}
-              <button type="button" onClick={renderProduction} className={view === "rendered" ? styles.segmentActive : ""} disabled={renderState === "rendering"}>
+              <button type="button" onClick={renderProduction} className={view === "rendered" ? styles.segmentActive : ""} disabled={renderState === "rendering" || hydrationState === "loading"}>
                 {renderState === "rendering" ? "Rendering…" : "Production HTML"}
               </button>
             </div>
             <div className={styles.stageMeta}>
               <span>{view === "rendered" ? `Renderer ${renderResult?.manifest.rendererVersion ?? "—"}` : "600px canvas"}</span>
-              <span>{view === "rendered" ? "MJML → HTML" : "100%"}</span>
+              <span>{isPersisted ? `DB v${currentVersion}` : view === "rendered" ? "MJML → HTML" : "100%"}</span>
             </div>
           </div>
 
@@ -318,7 +489,7 @@ export default function BuilderPage() {
             ) : (
               <div className={`${styles.emailCanvas} ${view === "mobile" ? styles.mobileCanvas : ""}`}>
                 <div className={styles.emailChrome}>
-                  <span>Northstar Goods</span>
+                  <span>{campaignContext.brand.name}</span>
                   <span>View in browser</span>
                 </div>
                 {blocks.map((block) => (
@@ -376,8 +547,8 @@ export default function BuilderPage() {
 
               <div className={styles.propertyGroup}>
                 <div className={styles.propertyRow}>
-                  <span>Background</span>
-                  <span className={styles.colorValue}><i /> #F4F1FF</span>
+                  <span>Brand primary</span>
+                  <span className={styles.colorValue}><i style={{ background: campaignContext.brand.primaryColor }} /> {campaignContext.brand.primaryColor}</span>
                 </div>
                 <div className={styles.propertyRow}>
                   <span>Spacing</span>
@@ -401,15 +572,19 @@ export default function BuilderPage() {
               <div className={styles.qaTitleRow}>
                 <div>
                   <span className={styles.kicker}>Inbox Lab</span>
-                  <strong>{renderState === "error" ? "Release blocked" : renderResult ? "Renderer passed" : localGatePassed ? "Ready to render" : "Release blocked"}</strong>
+                  <strong>{renderState === "error" || saveState === "error" || hydrationState === "error" ? "Release blocked" : renderResult ? "Renderer passed" : localGatePassed ? "Ready to render" : "Release blocked"}</strong>
                 </div>
-                <span className={qaStatus === "BLOCK" || renderState === "error" ? styles.blockDot : styles.passDot}>{renderState === "error" ? "BLOCK" : qaStatus}</span>
+                <span className={qaStatus === "BLOCK" || renderState === "error" || saveState === "error" || hydrationState === "error" ? styles.blockDot : styles.passDot}>
+                  {renderState === "error" || saveState === "error" || hydrationState === "error" ? "BLOCK" : qaStatus}
+                </span>
               </div>
 
+              {persistenceError ? <p className={styles.renderError}>{persistenceError}</p> : null}
               {renderError ? <p className={styles.renderError}>{renderError}</p> : null}
 
               <ul>
                 <li><span>{footerCount === 1 ? "✓" : "!"}</span> Exactly one legal footer</li>
+                <li><span>{isPersisted ? "✓" : "·"}</span> {isPersisted ? `Immutable version ${currentVersion}` : "Demo mode — no database write"}</li>
                 <li><span>✓</span> Unsubscribe token generated</li>
                 <li><span>✓</span> Images-off essentials</li>
                 <li><span>✓</span> Executable HTML blocked</li>
@@ -459,7 +634,7 @@ function CanvasBlockPreview({
   if (block.kind === "hero") {
     return (
       <button type="button" className={`${className} ${styles.heroBlock}`} onClick={onSelect}>
-        {!imagesOff ? <span className={styles.heroImage}>ORBIT</span> : <span className={styles.imageOff}>Image hidden · alt: Orbit insulated bottle</span>}
+        {!imagesOff ? <span className={styles.heroImage}>FEATURE</span> : <span className={styles.imageOff}>Image hidden · meaningful alt text preserved</span>}
         <span className={styles.emailEyebrow}>NEW PRODUCT</span>
         <strong>{block.title}</strong>
         <span className={styles.emailBody}>{block.body}</span>
@@ -482,10 +657,10 @@ function CanvasBlockPreview({
       <button type="button" className={className} onClick={onSelect}>
         <span className={styles.sectionTitle}>{block.title}</span>
         <span className={styles.productGrid}>
-          {["Lilac", "Ink"].map((finish) => (
+          {["One", "Two"].map((finish) => (
             <span className={styles.productCard} key={finish}>
-              {!imagesOff ? <i>{finish}</i> : <i className={styles.productImageOff}>Alt: {finish} Orbit bottle</i>}
-              <b>Orbit / {finish}</b>
+              {!imagesOff ? <i>Product {finish}</i> : <i className={styles.productImageOff}>Alt: featured product {finish.toLowerCase()}</i>}
+              <b>Featured product {finish.toLowerCase()}</b>
               <small>₹2,499</small>
               <em>View product</em>
             </span>
