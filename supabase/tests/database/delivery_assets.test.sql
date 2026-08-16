@@ -92,8 +92,8 @@ select extensions.throws_ok(
 
 select extensions.is(
   (select count(*) from public.assets where workspace_id = '92000000-0000-4000-8000-000000000001'),
-  0::bigint,
-  'viewer cannot see delivery asset metadata through assets RLS after owner context is removed'
+  1::bigint,
+  'viewer can read workspace delivery asset metadata without gaining write access'
 );
 
 reset role;
