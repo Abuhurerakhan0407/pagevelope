@@ -28,13 +28,25 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { data: campaign, error: campaignError } = await supabase
     .from("campaigns")
-    .select("id,workspace_id,brand_id,name,status,schema_version,current_version_number,updated_at")
+    .select(
+      "id,workspace_id,brand_id,name,status,schema_version,current_version_number,updated_at,campaign_system,brief_completed_at,selected_direction_key,creative_directions",
+    )
     .eq("workspace_id", workspaceId)
     .eq("id", campaignId)
     .maybeSingle();
 
   if (campaignError || !campaign) {
     return NextResponse.json({ error: "Campaign not found in this workspace." }, { status: 404 });
+  }
+
+  if (!campaign.brief_completed_at || !campaign.selected_direction_key) {
+    return NextResponse.json(
+      {
+        error: "Campaign brief and creative direction are required before the builder opens.",
+        code: "CAMPAIGN_GATE_REQUIRED",
+      },
+      { status: 409, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const [{ data: brand, error: brandError }, { data: version, error: versionError }] = await Promise.all([
