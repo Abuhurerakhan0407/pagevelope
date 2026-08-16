@@ -78,7 +78,7 @@ export async function createCodeTemplate(
 export async function assignTemplateToCampaignMessage(
   accessToken: string,
   input: { templateId: string; messageId: string },
-): Promise<{ messageId: string; assignedTemplateId?: string }> {
+): Promise<{ messageId: string; assignedTemplateId?: string; campaignId?: string }> {
   const response = await requestKlaviyo(accessToken, "/api/campaign-message-assign-template", {
     method: "POST",
     body: JSON.stringify({
@@ -98,10 +98,18 @@ export async function assignTemplateToCampaignMessage(
     throw new Error("Klaviyo campaign-message response did not contain a message id.");
   }
 
-  const relationship = response.data.relationships?.template as
+  const templateRelationship = response.data.relationships?.template as
     | { data?: { id?: string } }
     | undefined;
-  return { messageId: response.data.id, assignedTemplateId: relationship?.data?.id };
+  const campaignRelationship = response.data.relationships?.campaign as
+    | { data?: { id?: string } }
+    | undefined;
+
+  return {
+    messageId: response.data.id,
+    assignedTemplateId: templateRelationship?.data?.id,
+    campaignId: campaignRelationship?.data?.id,
+  };
 }
 
 export async function getKlaviyoAccount(accessToken: string): Promise<{ accountId: string; name?: string }> {
