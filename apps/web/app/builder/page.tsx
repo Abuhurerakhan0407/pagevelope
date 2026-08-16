@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "./builder.module.css";
 
@@ -152,10 +153,10 @@ export default function BuilderPage() {
     <main className={styles.shell}>
       <header className={styles.topbar}>
         <div className={styles.topLeft}>
-          <a className={styles.brand} href="/" aria-label="Back to Pagevelope home">
+          <Link className={styles.brand} href="/" aria-label="Back to Pagevelope home">
             <span className={styles.brandMark}>P</span>
             <span>Pagevelope</span>
-          </a>
+          </Link>
           <span className={styles.crumb}>/</span>
           <div>
             <strong className={styles.campaignName}>Orbit Bottle Launch</strong>
