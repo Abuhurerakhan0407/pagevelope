@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(13);
+select extensions.plan(14);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -96,12 +96,19 @@ select extensions.throws_ok(
 );
 
 select extensions.lives_ok(
-  $$select public.select_campaign_direction(
+  $$select public.select_campaign_direction_and_seed(
       '61000000-0000-4000-8000-000000000001',
       '61200000-0000-4000-8000-000000000001',
-      'product'
+      'product',
+      0,
+      jsonb_build_object(
+        'schemaVersion', '1.0.0',
+        'id', '61200000-0000-4000-8000-000000000001',
+        'name', 'Orbit Launch'
+      ),
+      repeat('d', 64)
     )$$,
-  'editor can select one generated creative direction'
+  'direction selection and initial immutable version commit atomically'
 );
 
 select extensions.is(
@@ -111,16 +118,25 @@ select extensions.is(
 );
 
 select extensions.is(
+  (select current_version_number from public.campaigns where id = '61200000-0000-4000-8000-000000000001'),
+  1,
+  'direction seed advances immutable campaign history'
+);
+
+select extensions.is(
   (select count(*) from public.audit_events where action = 'campaign.direction.selected'),
   1::bigint,
   'direction selection is audited'
 );
 
 select extensions.throws_ok(
-  $$select public.select_campaign_direction(
+  $$select public.select_campaign_direction_and_seed(
       '61000000-0000-4000-8000-000000000001',
       '61200000-0000-4000-8000-000000000001',
-      'random'
+      'random',
+      1,
+      jsonb_build_object('schemaVersion', '1.0.0', 'id', '61200000-0000-4000-8000-000000000001'),
+      repeat('e', 64)
     )$$,
   '22023',
   null,
@@ -138,14 +154,17 @@ select extensions.is(
 );
 
 select extensions.throws_ok(
-  $$select public.select_campaign_direction(
+  $$select public.select_campaign_direction_and_seed(
       '61000000-0000-4000-8000-000000000001',
       '61200000-0000-4000-8000-000000000001',
-      'product'
+      'product',
+      1,
+      jsonb_build_object('schemaVersion', '1.0.0', 'id', '61200000-0000-4000-8000-000000000001'),
+      repeat('f', 64)
     )$$,
   '42501',
   null,
-  'other tenant cannot select a direction'
+  'other tenant cannot select or seed a direction'
 );
 
 reset role;
