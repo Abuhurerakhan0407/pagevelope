@@ -66,6 +66,20 @@ main { min-height: 100vh; }
 .roadmap li.activePhase { color: var(--pv-primary); }
 .rules { margin-bottom: 80px; padding: clamp(30px, 6vw, 64px); background: linear-gradient(145deg, #fff, #f4f1ff); }
 .rules p:last-child { max-width: 760px; margin: 22px 0 0; color: var(--pv-muted); font-size: 17px; line-height: 1.65; }
+
+iframe[title="Production email HTML preview"] {
+  display: block;
+  width: 100%;
+  min-height: 760px;
+  border: 0;
+  background: #fff;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
 @media (max-width: 800px) {
   .topbar { padding-inline: 18px; }
   .hero { padding-top: 72px; }
