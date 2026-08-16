@@ -17,7 +17,7 @@ test("release review surfaces a provider-confirmed test send between inbox proof
 
 test("positive approval stays unavailable in the UI until test delivery succeeds", () => {
   assert.match(page, /const testPassed = readiness\.successful_test_send_count > 0/);
-  assert.match(page, /value="approved" disabled=!\{?testPassed/);
+  assert.match(page, /value="approved" disabled=\{!testPassed\}/);
   assert.match(actions, /error\.code === "23514"[\s\S]*"test-send-required"/);
 });
 
