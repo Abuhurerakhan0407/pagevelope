@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "declaration": true,
+    "outDir": ".build/core",
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": [
+    "packages/editor-schema/src/**/*.ts",
+    "packages/email-components/src/**/*.ts",
+    "packages/email-renderer/src/**/*.ts",
+    "packages/email-qa/src/**/*.ts"
+  ]
+}
