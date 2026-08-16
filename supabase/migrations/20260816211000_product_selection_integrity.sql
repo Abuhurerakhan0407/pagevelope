@@ -3,13 +3,12 @@
 
 begin;
 
--- RLS policies are only effective after the authenticated role has matching table privileges.
--- Keep campaign-product mutation intentionally narrower than product catalog mutation: the app
--- may read/insert/delete links, while reordering/replacement goes through the controlled RPC.
-revoke all on public.products from anon;
-revoke all on public.campaign_products from anon;
-grant select, insert, update, delete on public.products to authenticated;
-grant select, insert, delete on public.campaign_products to authenticated;
+-- Authenticated clients need read access for the product picker. All catalog and selection
+-- mutations stay behind audited SECURITY DEFINER RPCs instead of being writable directly.
+revoke all on public.products from anon, authenticated;
+revoke all on public.campaign_products from anon, authenticated;
+grant select on public.products to authenticated;
+grant select on public.campaign_products to authenticated;
 
 create or replace function private.assert_campaign_product_brand()
 returns trigger
