@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(16);
+select extensions.plan(17);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -64,7 +64,7 @@ select extensions.lives_ok(
       'Brand A Product', 'A-001', 1000, 'INR',
       'https://images.example.com/a.jpg', 'https://example.com/a'
     )$$,
-  'brand A product can be created'
+  'brand A product can be created through the audited RPC'
 );
 
 select extensions.lives_ok(
@@ -75,8 +75,23 @@ select extensions.lives_ok(
       'Brand B Product', 'B-001', 1200, 'INR',
       'https://images.example.com/b.jpg', 'https://example.com/b'
     )$$,
-  'brand B product can be created in the same workspace'
+  'brand B product can be created through the audited RPC'
 );
+
+select extensions.throws_ok(
+  $$insert into public.campaign_products (workspace_id, campaign_id, product_id, position)
+    values (
+      '73100000-0000-4000-8000-000000000001',
+      '73300000-0000-4000-8000-000000000001',
+      (select product_a from integrity_product_state),
+      1
+    )$$,
+  '42501',
+  null,
+  'authenticated clients cannot bypass the audited product-selection RPC'
+);
+
+reset role;
 
 select extensions.throws_ok(
   $$insert into public.campaign_products (workspace_id, campaign_id, product_id, position)
@@ -88,7 +103,7 @@ select extensions.throws_ok(
     )$$,
   '23514',
   null,
-  'direct same-workspace cross-brand product insertion fails closed'
+  'database integrity still rejects a same-workspace cross-brand product link'
 );
 
 select extensions.lives_ok(
@@ -99,8 +114,10 @@ select extensions.lives_ok(
       (select product_a from integrity_product_state),
       1
     )$$,
-  'direct same-brand campaign product insertion remains valid'
+  'database-owner same-brand link remains structurally valid'
 );
+
+set local role authenticated;
 
 select extensions.is(
   (select product_selection_completed_at from public.campaigns where id = '73300000-0000-4000-8000-000000000001'),
@@ -143,8 +160,10 @@ select extensions.lives_ok(
       'Brand A Product Two', 'A-002', 1500, 'INR',
       'https://images.example.com/a-two.jpg', 'https://example.com/a-two'
     )$$,
-  'a second same-brand product can be created'
+  'a second same-brand product can be created through the audited RPC'
 );
+
+reset role;
 
 select extensions.lives_ok(
   $$insert into public.campaign_products (workspace_id, campaign_id, product_id, position)
@@ -154,8 +173,10 @@ select extensions.lives_ok(
       (select product_c from integrity_product_state),
       2
     )$$,
-  'changing campaign products directly invalidates downstream campaign state'
+  'database-level product-link mutation invalidates downstream campaign state'
 );
+
+set local role authenticated;
 
 select extensions.is(
   (select product_selection_completed_at from public.campaigns where id = '73300000-0000-4000-8000-000000000001'),
