@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { createWorkspace } from "./actions";
@@ -10,6 +11,12 @@ type Workspace = {
   name: string;
   slug: string;
   created_at: string;
+};
+
+type Brand = {
+  id: string;
+  workspace_id: string;
+  name: string;
 };
 
 type DashboardPageProps = {
@@ -58,12 +65,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     redirect("/auth/sign-in");
   }
 
-  const { data, error } = await supabase
-    .from("workspaces")
-    .select("id,name,slug,created_at")
-    .order("created_at", { ascending: true });
+  const [{ data: workspaceData, error }, { data: brandData }] = await Promise.all([
+    supabase.from("workspaces").select("id,name,slug,created_at").order("created_at", { ascending: true }),
+    supabase.from("brands").select("id,workspace_id,name").order("created_at", { ascending: true }),
+  ]);
 
-  const workspaces = (data ?? []) as Workspace[];
+  const workspaces = (workspaceData ?? []) as Workspace[];
+  const brands = (brandData ?? []) as Brand[];
+  const firstBrandByWorkspace = new Map<string, Brand>();
+  for (const brand of brands) {
+    if (!firstBrandByWorkspace.has(brand.workspace_id)) firstBrandByWorkspace.set(brand.workspace_id, brand);
+  }
+
   const errorMessage = params.error ? errorMessages[params.error] : null;
   const createdMessage = params.created === "1" ? "Workspace created. You are its owner." : null;
 
@@ -104,19 +117,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             ) : workspaces.length ? (
               <div className={styles.grid}>
-                {workspaces.map((workspace) => (
-                  <article className={styles.card} key={workspace.id}>
-                    <div className={styles.cardTop}>
-                      <h2>{workspace.name}</h2>
-                      <span className={styles.badge}>Workspace</span>
-                    </div>
-                    <p className={styles.slug}>/{workspace.slug}</p>
-                    <div className={styles.cardMeta}>
-                      <span>Brands</span>
-                      <strong>Next setup step</strong>
-                    </div>
-                  </article>
-                ))}
+                {workspaces.map((workspace) => {
+                  const brand = firstBrandByWorkspace.get(workspace.id);
+                  const href = brand
+                    ? `/workspaces/${workspace.id}/brands/${brand.id}`
+                    : `/workspaces/${workspace.id}/brands/new`;
+                  return (
+                    <article className={styles.card} key={workspace.id}>
+                      <div className={styles.cardTop}>
+                        <h2>{workspace.name}</h2>
+                        <span className={styles.badge}>Workspace</span>
+                      </div>
+                      <p className={styles.slug}>/{workspace.slug}</p>
+                      <div className={styles.cardMeta}>
+                        <span>{brand ? `Brand · ${brand.name}` : "No brand configured"}</span>
+                        <Link className={styles.cardAction} href={href}>{brand ? "Open brand →" : "Set up brand →"}</Link>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : (
               <div className={styles.emptyCard}>
