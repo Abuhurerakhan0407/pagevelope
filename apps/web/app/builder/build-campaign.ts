@@ -1,4 +1,4 @@
-import type { CampaignBlock, CampaignDocumentV1 } from "@pagevelope/editor-schema";
+import type { CampaignBlock, CampaignDocumentV1, HexColor } from "@pagevelope/editor-schema";
 
 export type BuilderBlockKind =
   | "header"
@@ -67,6 +67,10 @@ function productUrl(context: CampaignBuildContext) {
   return `${homeUrl(context).replace(/\/$/, "")}/products/featured`;
 }
 
+function hex(value: string): HexColor {
+  return value as HexColor;
+}
+
 function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): CampaignBlock {
   switch (block.kind) {
     case "header":
@@ -95,7 +99,7 @@ function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): Ca
             }
           : undefined,
         align: "left",
-        backgroundColor: context.brand.accentColor,
+        backgroundColor: hex(context.brand.accentColor),
       };
     case "text":
       return {
@@ -204,11 +208,11 @@ export function buildCampaignDocument(
       name: context.brand.name,
       fontFamily: context.brand.fontFamily,
       colors: {
-        background: context.brand.backgroundColor,
+        background: hex(context.brand.backgroundColor),
         surface: "#FFFFFF",
-        text: context.brand.textColor,
+        text: hex(context.brand.textColor),
         muted: "#6B7280",
-        primary: context.brand.primaryColor,
+        primary: hex(context.brand.primaryColor),
       },
     },
     blocks: blocks.map((block) => toCampaignBlock(block, context)),
