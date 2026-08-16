@@ -4,8 +4,8 @@ import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { renderCampaignRelease, stableStringify } from "@pagevelope/email-renderer";
-import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import {
   getResendTestConfig,
@@ -136,29 +136,18 @@ export async function sendTestEmailAction(
   }
 
   const attemptId = attemptData;
-  const [{ data: candidate, error: candidateError }, { data: campaign, error: campaignError }] = await Promise.all([
-    supabase
-      .from("campaign_release_candidates")
-      .select("id,campaign_id,version_number,source_sha256,manifest_sha256")
-      .eq("workspace_id", workspaceId)
-      .eq("id", candidateId)
-      .maybeSingle(),
-    supabase
-      .from("campaigns")
-      .select("id,current_version_number,status")
-      .eq("workspace_id", workspaceId)
-      .eq("id", candidateId)
-      .maybeSingle(),
-  ]);
+  const { data: candidate, error: candidateError } = await supabase
+    .from("campaign_release_candidates")
+    .select("id,campaign_id,version_number,source_sha256,manifest_sha256")
+    .eq("workspace_id", workspaceId)
+    .eq("id", candidateId)
+    .maybeSingle();
 
   if (candidateError || !candidate) {
     await completeTestAttempt(serviceRoleKey, workspaceId, attemptId, "failed", "", "release_integrity");
     redirect(`${path}&error=release-integrity`);
   }
 
-  // Fetch the campaign separately using the candidate's immutable relationship. The first
-  // parallel campaign lookup above intentionally never authorizes a send because candidate
-  // ids and campaign ids are distinct; it only keeps this path fail-closed under malformed input.
   const { data: currentCampaign, error: currentCampaignError } = await supabase
     .from("campaigns")
     .select("id,current_version_number,status")
@@ -167,8 +156,6 @@ export async function sendTestEmailAction(
     .maybeSingle();
 
   if (
-    campaignError ||
-    campaign ||
     currentCampaignError ||
     !currentCampaign ||
     currentCampaign.status !== "review" ||
