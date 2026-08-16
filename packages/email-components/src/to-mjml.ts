@@ -7,6 +7,7 @@ import type {
   FooterBlock,
   HeroBlock,
   ImageBlock,
+  ImageValue,
   ProductGridBlock,
   SocialBlock,
   TextBlock
@@ -16,13 +17,42 @@ import { escapeXml } from "./escape.js";
 function attr(value: string): string { return escapeXml(value); }
 function align(value: "left" | "center" | "right" | undefined): string { return value ?? "left"; }
 
+interface ImageRenderOptions {
+  padding?: string;
+  width?: number;
+  align?: "left" | "center" | "right";
+  href?: string;
+}
+
+function imageElement(image: ImageValue, src: string, options: ImageRenderOptions = {}): string {
+  const padding = options.padding ? ` padding="${attr(options.padding)}"` : "";
+  const width = options.width ?? image.width;
+  const widthAttr = width ? ` width="${width}px"` : "";
+  const alignAttr = options.align ? ` align="${options.align}"` : "";
+  const hrefAttr = options.href ? ` href="${attr(options.href)}"` : "";
+  return `<mj-image${padding}${widthAttr}${alignAttr}${hrefAttr} src="${attr(src)}" alt="${attr(image.alt)}" />`;
+}
+
+/**
+ * Animated GIFs remain the only production motion format. Outlook desktop gets
+ * the separately-proven static first frame while non-MSO clients receive the
+ * animated GIF. The same alt text, width and destination are preserved in both.
+ */
+function renderImageAsset(image: ImageValue, options: ImageRenderOptions = {}): string {
+  const animated = imageElement(image, image.src, options);
+  if (!image.motion) return animated;
+
+  const fallback = imageElement(image, image.motion.firstFrameSrc, options);
+  return `<mj-raw><!--[if mso]></mj-raw>${fallback}<mj-raw><![endif]--></mj-raw><mj-raw><!--[if !mso]><!--></mj-raw>${animated}<mj-raw><!--<![endif]--></mj-raw>`;
+}
+
 function renderText(block: TextBlock): string {
   return `<mj-section padding="8px 0"><mj-column>${block.heading ? `<mj-text padding="8px 24px 4px" font-size="22px" font-weight="700" align="${align(block.align)}">${escapeXml(block.heading)}</mj-text>` : ""}<mj-text padding="6px 24px 14px" line-height="1.6" align="${align(block.align)}">${escapeXml(block.body)}</mj-text></mj-column></mj-section>`;
 }
 
 function renderImage(block: ImageBlock): string {
-  const image = `<mj-image padding="10px 24px" src="${attr(block.image.src)}" alt="${attr(block.image.alt)}"${block.image.width ? ` width="${block.image.width}px"` : ""} />`;
-  return `<mj-section padding="0"><mj-column>${block.href ? `<mj-raw><a href="${attr(block.href)}" style="text-decoration:none"></mj-raw>${image}<mj-raw></a></mj-raw>` : image}</mj-column></mj-section>`;
+  const image = renderImageAsset(block.image, { padding: "10px 24px", href: block.href });
+  return `<mj-section padding="0"><mj-column>${image}</mj-column></mj-section>`;
 }
 
 function renderButton(block: ButtonBlock): string {
@@ -30,7 +60,7 @@ function renderButton(block: ButtonBlock): string {
 }
 
 function renderHero(block: HeroBlock, primary: string): string {
-  const image = block.image ? `<mj-image padding="12px 24px 4px" src="${attr(block.image.src)}" alt="${attr(block.image.alt)}"${block.image.width ? ` width="${block.image.width}px"` : ""} />` : "";
+  const image = block.image ? renderImageAsset(block.image, { padding: "12px 24px 4px" }) : "";
   const eyebrow = block.eyebrow ? `<mj-text padding="28px 24px 6px" color="${primary}" font-size="12px" font-weight="700" text-transform="uppercase" letter-spacing="1px" align="${align(block.align)}">${escapeXml(block.eyebrow)}</mj-text>` : "";
   const body = block.body ? `<mj-text padding="8px 24px 10px" line-height="1.55" align="${align(block.align)}">${escapeXml(block.body)}</mj-text>` : "";
   const cta = block.cta ? `<mj-button align="${align(block.align)}" href="${attr(block.cta.href)}" background-color="${primary}" color="#ffffff" border-radius="8px" padding="8px 24px 30px">${escapeXml(block.cta.label)}</mj-button>` : "";
@@ -39,7 +69,7 @@ function renderHero(block: HeroBlock, primary: string): string {
 
 function renderProductGrid(block: ProductGridBlock, primary: string): string {
   const columnWidth = block.columns === 3 ? "33.333%" : block.columns === 1 ? "100%" : "50%";
-  const products = block.products.map((product) => `<mj-column width="${columnWidth}" padding="8px"><mj-image padding="0 0 10px" src="${attr(product.image.src)}" alt="${attr(product.image.alt)}" /><mj-text padding="0 0 4px" font-weight="700">${escapeXml(product.title)}</mj-text>${product.price ? `<mj-text padding="0 0 8px" color="#6b7280">${escapeXml(product.price)}</mj-text>` : ""}<mj-button href="${attr(product.href)}" align="left" background-color="${primary}" color="#ffffff" border-radius="7px" padding="4px 0">View product</mj-button></mj-column>`).join("");
+  const products = block.products.map((product) => `<mj-column width="${columnWidth}" padding="8px">${renderImageAsset(product.image, { padding: "0 0 10px", href: product.href })}<mj-text padding="0 0 4px" font-weight="700">${escapeXml(product.title)}</mj-text>${product.price ? `<mj-text padding="0 0 8px" color="#6b7280">${escapeXml(product.price)}</mj-text>` : ""}<mj-button href="${attr(product.href)}" align="left" background-color="${primary}" color="#ffffff" border-radius="7px" padding="4px 0">View product</mj-button></mj-column>`).join("");
   return `${block.heading ? `<mj-section padding="18px 24px 2px"><mj-column><mj-text padding="0" font-size="24px" font-weight="700">${escapeXml(block.heading)}</mj-text></mj-column></mj-section>` : ""}<mj-section padding="8px 16px 20px">${products}</mj-section>`;
 }
 
@@ -51,7 +81,7 @@ function renderSocial(block: SocialBlock): string {
 function renderColumnChild(block: ColumnChild, primary: string): string {
   switch (block.type) {
     case "text": return `${block.heading ? `<mj-text font-size="18px" font-weight="700">${escapeXml(block.heading)}</mj-text>` : ""}<mj-text line-height="1.55">${escapeXml(block.body)}</mj-text>`;
-    case "image": return `<mj-image src="${attr(block.image.src)}" alt="${attr(block.image.alt)}" />`;
+    case "image": return renderImageAsset(block.image, { href: block.href });
     case "button": return `<mj-button href="${attr(block.cta.href)}" background-color="${primary}" color="#ffffff" border-radius="7px">${escapeXml(block.cta.label)}</mj-button>`;
   }
 }
@@ -72,8 +102,10 @@ function renderBlock(block: CampaignBlock, campaign: CampaignDocumentV1): string
   switch (block.type) {
     case "preheader": return "";
     case "header": {
-      const logo = block.logo ? `<mj-image align="left" padding="14px 24px" width="${block.logo.width ?? 120}px" src="${attr(block.logo.src)}" alt="${attr(block.logo.alt)}" />` : `<mj-text padding="18px 24px" font-weight="800" font-size="18px">${escapeXml(block.wordmark ?? campaign.brand.name)}</mj-text>`;
-      return `<mj-section padding="0"><mj-column>${block.homeUrl ? `<mj-raw><a href="${attr(block.homeUrl)}" style="text-decoration:none;color:inherit"></mj-raw>${logo}<mj-raw></a></mj-raw>` : logo}</mj-column></mj-section>`;
+      const logo = block.logo
+        ? renderImageAsset(block.logo, { align: "left", padding: "14px 24px", width: block.logo.width ?? 120, href: block.homeUrl })
+        : `<mj-text padding="18px 24px" font-weight="800" font-size="18px">${escapeXml(block.wordmark ?? campaign.brand.name)}</mj-text>`;
+      return `<mj-section padding="0"><mj-column>${logo}</mj-column></mj-section>`;
     }
     case "hero": return renderHero(block, campaign.brand.colors.primary);
     case "text": return renderText(block);
