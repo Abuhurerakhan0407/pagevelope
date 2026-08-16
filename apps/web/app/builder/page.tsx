@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { buildCampaignDocument } from "./build-campaign";
 import styles from "./builder.module.css";
 
-type ViewMode = "desktop" | "mobile" | "images-off";
+type ViewMode = "desktop" | "mobile" | "images-off" | "rendered";
 type BlockKind = "header" | "hero" | "text" | "image" | "button" | "products" | "divider" | "spacer" | "social" | "footer";
 
 type CanvasBlock = {
@@ -14,6 +15,21 @@ type CanvasBlock = {
   title: string;
   body?: string;
   cta?: string;
+};
+
+type RenderResult = {
+  html: string;
+  plainText: string;
+  mjml: string;
+  manifest: {
+    rendererVersion: string;
+    sourceFingerprint: string;
+    qa: {
+      status: "PASS" | "WARN" | "BLOCK";
+      issues: Array<{ code: string; severity: "WARN" | "BLOCK"; message: string }>;
+    };
+    files: Array<{ name: string; bytes: number; sha256: string }>;
+  };
 };
 
 const initialBlocks: CanvasBlock[] = [
@@ -72,7 +88,7 @@ function makeBlock(kind: BlockKind, label: string): CanvasBlock {
     products: { title: "Featured products", body: "Product one · ₹1,999\nProduct two · ₹2,499" },
     divider: { title: "Divider" },
     spacer: { title: "24px spacer" },
-    social: { title: "Follow us", body: "Instagram · LinkedIn" },
+    social: { title: "Follow us", body: "Instagram" },
     footer: { title: "Company name", body: "Physical business address" },
   };
 
@@ -90,14 +106,25 @@ export default function BuilderPage() {
   const [view, setView] = useState<ViewMode>("desktop");
   const [qaOpen, setQaOpen] = useState(true);
   const [saved, setSaved] = useState(true);
+  const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
+  const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
+  const [renderError, setRenderError] = useState("");
 
   const selected = useMemo(
     () => blocks.find((block) => block.id === selectedId) ?? blocks[0],
     [blocks, selectedId],
   );
 
+  const footerCount = blocks.filter((block) => block.kind === "footer").length;
+  const localGatePassed = footerCount === 1;
+  const qaStatus = renderResult?.manifest.qa.status ?? (localGatePassed ? "PASS" : "BLOCK");
+
   function markDirty() {
     setSaved(false);
+    setRenderState("idle");
+    setRenderResult(null);
+    setRenderError("");
+    if (view === "rendered") setView("desktop");
   }
 
   function addBlock(kind: BlockKind, label: string) {
@@ -147,7 +174,46 @@ export default function BuilderPage() {
     setSaved(true);
   }
 
-  const qaIssues = blocks.some((block) => block.kind === "footer") ? 0 : 1;
+  async function renderProduction() {
+    setRenderState("rendering");
+    setRenderError("");
+
+    try {
+      const response = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildCampaignDocument(blocks)),
+      });
+      const payload = (await response.json()) as RenderResult | { error?: string };
+
+      if (!response.ok || !("html" in payload)) {
+        throw new Error("error" in payload && payload.error ? payload.error : "Production render failed.");
+      }
+
+      setRenderResult(payload);
+      setRenderState("ready");
+      setView("rendered");
+      setQaOpen(true);
+    } catch (error) {
+      setRenderResult(null);
+      setRenderState("error");
+      setRenderError(error instanceof Error ? error.message : "Production render failed.");
+      setQaOpen(true);
+    }
+  }
+
+  function downloadHtml() {
+    if (!renderResult) return;
+    const blob = new Blob([renderResult.html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "orbit-bottle-launch.html";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <main className={styles.shell}>
@@ -160,7 +226,7 @@ export default function BuilderPage() {
           <span className={styles.crumb}>/</span>
           <div>
             <strong className={styles.campaignName}>Orbit Bottle Launch</strong>
-            <span className={styles.version}>Draft · v3</span>
+            <span className={styles.version}>Draft · schema v1</span>
           </div>
         </div>
 
@@ -170,6 +236,10 @@ export default function BuilderPage() {
           <button className={styles.iconButton} type="button" onClick={() => moveSelected(1)} title="Move selected block down">↓</button>
           <button className={styles.secondaryButton} type="button" onClick={() => setQaOpen((value) => !value)}>Inbox Lab</button>
           <button className={styles.secondaryButton} type="button" onClick={saveCampaign}>Save</button>
+          <button className={styles.secondaryButton} type="button" onClick={renderProduction} disabled={renderState === "rendering"}>
+            {renderState === "rendering" ? "Rendering…" : "Render HTML"}
+          </button>
+          {renderResult ? <button className={styles.secondaryButton} type="button" onClick={downloadHtml}>Download HTML</button> : null}
           <button className={styles.primaryButton} type="button" onClick={() => window.alert("Publishing stays locked until approval + Inbox Lab gates pass.")}>Publish</button>
         </div>
       </header>
@@ -226,29 +296,42 @@ export default function BuilderPage() {
                   {mode === "desktop" ? "Desktop" : mode === "mobile" ? "Mobile" : "Images off"}
                 </button>
               ))}
+              <button type="button" onClick={renderProduction} className={view === "rendered" ? styles.segmentActive : ""} disabled={renderState === "rendering"}>
+                {renderState === "rendering" ? "Rendering…" : "Production HTML"}
+              </button>
             </div>
             <div className={styles.stageMeta}>
-              <span>600px canvas</span>
-              <span>100%</span>
+              <span>{view === "rendered" ? `Renderer ${renderResult?.manifest.rendererVersion ?? "—"}` : "600px canvas"}</span>
+              <span>{view === "rendered" ? "MJML → HTML" : "100%"}</span>
             </div>
           </div>
 
           <div className={styles.stageScroll}>
-            <div className={`${styles.emailCanvas} ${view === "mobile" ? styles.mobileCanvas : ""}`}>
-              <div className={styles.emailChrome}>
-                <span>Northstar Goods</span>
-                <span>View in browser</span>
+            {view === "rendered" ? (
+              <div className={`${styles.emailCanvas} ${styles.productionCanvas}`}>
+                {renderResult ? (
+                  <iframe className={styles.renderFrame} title="Production email HTML preview" srcDoc={renderResult.html} sandbox="allow-popups allow-popups-to-escape-sandbox" />
+                ) : (
+                  <div className={styles.renderPlaceholder}>Run the deterministic renderer to preview final production HTML.</div>
+                )}
               </div>
-              {blocks.map((block) => (
-                <CanvasBlockPreview
-                  block={block}
-                  key={block.id}
-                  selected={block.id === selectedId}
-                  imagesOff={view === "images-off"}
-                  onSelect={() => setSelectedId(block.id)}
-                />
-              ))}
-            </div>
+            ) : (
+              <div className={`${styles.emailCanvas} ${view === "mobile" ? styles.mobileCanvas : ""}`}>
+                <div className={styles.emailChrome}>
+                  <span>Northstar Goods</span>
+                  <span>View in browser</span>
+                </div>
+                {blocks.map((block) => (
+                  <CanvasBlockPreview
+                    block={block}
+                    key={block.id}
+                    selected={block.id === selectedId}
+                    imagesOff={view === "images-off"}
+                    onSelect={() => setSelectedId(block.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -318,16 +401,27 @@ export default function BuilderPage() {
               <div className={styles.qaTitleRow}>
                 <div>
                   <span className={styles.kicker}>Inbox Lab</span>
-                  <strong>{qaIssues === 0 ? "Preflight passed" : "Release blocked"}</strong>
+                  <strong>{renderState === "error" ? "Release blocked" : renderResult ? "Renderer passed" : localGatePassed ? "Ready to render" : "Release blocked"}</strong>
                 </div>
-                <span className={qaIssues === 0 ? styles.passDot : styles.blockDot}>{qaIssues === 0 ? "PASS" : "BLOCK"}</span>
+                <span className={qaStatus === "BLOCK" || renderState === "error" ? styles.blockDot : styles.passDot}>{renderState === "error" ? "BLOCK" : qaStatus}</span>
               </div>
+
+              {renderError ? <p className={styles.renderError}>{renderError}</p> : null}
+
               <ul>
-                <li><span>✓</span> Unsubscribe token</li>
-                <li><span>✓</span> Physical address</li>
+                <li><span>{footerCount === 1 ? "✓" : "!"}</span> Exactly one legal footer</li>
+                <li><span>✓</span> Unsubscribe token generated</li>
                 <li><span>✓</span> Images-off essentials</li>
-                <li><span>✓</span> No executable HTML</li>
+                <li><span>✓</span> Executable HTML blocked</li>
               </ul>
+
+              {renderResult ? (
+                <div className={styles.renderMeta}>
+                  <span>Renderer v{renderResult.manifest.rendererVersion}</span>
+                  <span>{renderResult.manifest.files.find((file) => file.name === "campaign.html")?.bytes ?? 0} HTML bytes</span>
+                  <span>SHA {renderResult.manifest.sourceFingerprint.slice(0, 12)}…</span>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </aside>
