@@ -24,6 +24,12 @@
   "dependencies": {
     "mjml": "5.4.0"
   },
+  "overrides": {
+    "next@16.2.12": {
+      "postcss": "8.5.23",
+      "sharp": "0.35.3"
+    }
+  },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
