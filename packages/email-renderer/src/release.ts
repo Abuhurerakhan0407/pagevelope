@@ -5,10 +5,11 @@ import { runPreflight, type QaReport } from "../../email-qa/src/preflight.js";
 import { validateCampaignDocument } from "../../editor-schema/src/validate.js";
 import type { CampaignDocumentV1 } from "../../editor-schema/src/model.js";
 import { compileMjmlStrict, MJML_COMPILER_VERSION } from "./compile.js";
+import { assertSafeCompiledOutput } from "./output-safety.js";
 import { campaignToPlainText } from "./plain-text.js";
 import { stableStringify } from "./stable.js";
 
-export const RELEASE_RENDERER_VERSION = "0.1.0";
+export const RELEASE_RENDERER_VERSION = "0.2.0";
 export const RELEASE_MANIFEST_VERSION = "1.0.0";
 
 export interface ReleaseFileDescriptor {
@@ -84,6 +85,8 @@ export async function renderCampaignRelease(input: unknown): Promise<CampaignRel
   const plainText = campaignToPlainText(source);
   const compiled = await compileMjmlStrict(mjml);
   const html = compiled.html;
+
+  assertSafeCompiledOutput(source, html, plainText);
 
   const files: ReleaseFileDescriptor[] = [
     descriptor("source.json", "application/json", sourceJson),
