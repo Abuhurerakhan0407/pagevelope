@@ -47,10 +47,18 @@ security definer
 set search_path = ''
 as $$
 declare
-  target_workspace_id uuid := coalesce(new.workspace_id, old.workspace_id);
-  target_campaign_id uuid := coalesce(new.campaign_id, old.campaign_id);
+  target_workspace_id uuid;
+  target_campaign_id uuid;
   caller_id uuid := (select auth.uid());
 begin
+  if tg_op = 'DELETE' then
+    target_workspace_id := old.workspace_id;
+    target_campaign_id := old.campaign_id;
+  else
+    target_workspace_id := new.workspace_id;
+    target_campaign_id := new.campaign_id;
+  end if;
+
   update public.campaigns c
   set product_selection_completed_at = null,
       brief_completed_at = null,
