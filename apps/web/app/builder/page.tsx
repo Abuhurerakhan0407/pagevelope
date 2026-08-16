@@ -181,25 +181,24 @@ export default function BuilderPage() {
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderError, setRenderError] = useState("");
   const [campaignContext, setCampaignContext] = useState<CampaignBuildContext>(demoCampaignContext);
-  const [persistenceTarget, setPersistenceTarget] = useState<PersistenceTarget | null>(null);
-  const [currentVersion, setCurrentVersion] = useState(0);
-  const [hydrationState, setHydrationState] = useState<"demo" | "loading" | "ready" | "error">("demo");
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "error">("idle");
-  const [persistenceError, setPersistenceError] = useState("");
-
-  useEffect(() => {
+  const [persistenceTarget] = useState<PersistenceTarget | null>(() => {
+    if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
     const workspaceId = params.get("workspaceId")?.trim() || "";
     const brandId = params.get("brandId")?.trim() || "";
     const campaignId = params.get("campaignId")?.trim() || "";
+    return workspaceId && brandId && campaignId ? { workspaceId, brandId, campaignId } : null;
+  });
+  const [currentVersion, setCurrentVersion] = useState(0);
+  const [hydrationState, setHydrationState] = useState<"demo" | "loading" | "ready" | "error">(
+    persistenceTarget ? "loading" : "demo",
+  );
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "error">("idle");
+  const [persistenceError, setPersistenceError] = useState("");
 
-    if (!workspaceId || !brandId || !campaignId) return;
-
-    const target = { workspaceId, brandId, campaignId };
-    setPersistenceTarget(target);
-    setHydrationState("loading");
-    setPersistenceError("");
-
+  useEffect(() => {
+    if (!persistenceTarget) return;
+    const { workspaceId, campaignId } = persistenceTarget;
     const controller = new AbortController();
     fetch(`/api/campaigns/${encodeURIComponent(campaignId)}?workspaceId=${encodeURIComponent(workspaceId)}`, {
       signal: controller.signal,
@@ -233,7 +232,7 @@ export default function BuilderPage() {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [persistenceTarget]);
 
   const selected = useMemo(
     () => blocks.find((block) => block.id === selectedId) ?? blocks[0],
