@@ -25,6 +25,7 @@ type CampaignSeed = {
   id: string;
   name: string;
   current_version_number: number;
+  product_selection_completed_at: string | null;
   brief_goal: string | null;
   brief_audience: string | null;
   brief_offer: string | null;
@@ -44,21 +45,48 @@ type BrandSeed = {
   legal_address: string | null;
 };
 
+type ProductSeed = {
+  id: string;
+  title: string;
+  price_amount: string | number;
+  currency: string;
+  image_url: string | null;
+  product_url: string | null;
+};
+
 function briefPath(workspaceId: string, brandId: string, campaignId: string) {
   return `/workspaces/${workspaceId}/brands/${brandId}/campaigns/${campaignId}/brief`;
+}
+
+function productsPath(workspaceId: string, brandId: string, campaignId: string) {
+  return `/workspaces/${workspaceId}/brands/${brandId}/campaigns/${campaignId}/products`;
 }
 
 function asHex(value: string): HexColor {
   return value as HexColor;
 }
 
-function directionDocument(campaign: CampaignSeed, brand: BrandSeed, direction: DirectionKey): CampaignDocumentV1 {
+function productPrice(product: ProductSeed) {
+  const amount = Number(product.price_amount);
+  if (product.currency === "INR") return `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  return `${product.currency} ${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+}
+
+function directionDocument(
+  campaign: CampaignSeed,
+  brand: BrandSeed,
+  direction: DirectionKey,
+  products: ProductSeed[],
+): CampaignDocumentV1 {
   const homeUrl = brand.website_url || "https://example.com";
   const baseUrl = homeUrl.replace(/\/$/, "");
   const offer = campaign.brief_offer || "Discover the offer";
   const goal = campaign.brief_goal || campaign.name;
   const audience = campaign.brief_audience || "customers";
   const tone = campaign.brief_tone || "clear and confident";
+  const leadProduct = products[0];
+  const leadHref = leadProduct?.product_url || `${baseUrl}/products`;
+  const leadImage = leadProduct?.image_url || "https://images.example.com/product-placeholder.jpg";
 
   const hero = direction === "editorial"
     ? {
@@ -95,15 +123,13 @@ function directionDocument(campaign: CampaignSeed, brand: BrandSeed, direction: 
       heading: hero.heading,
       body: hero.body,
       image: {
-        src: direction === "motion"
-          ? "https://images.example.com/motion-first-frame.jpg"
-          : "https://images.example.com/campaign-hero.jpg",
+        src: leadImage,
         alt: direction === "motion"
-          ? "Meaningful first frame for the campaign motion concept"
-          : `${campaign.name} campaign hero`,
+          ? `Static first frame featuring ${leadProduct?.title || campaign.name}`
+          : `${leadProduct?.title || campaign.name} campaign hero`,
         width: 520,
       },
-      cta: { label: hero.cta, href: `${baseUrl}/products/featured` },
+      cta: { label: hero.cta, href: leadHref },
       align: direction === "editorial" ? "left" : "center",
       backgroundColor: direction === "product" ? asHex(brand.background_color) : asHex(brand.accent_color),
     },
@@ -114,34 +140,26 @@ function directionDocument(campaign: CampaignSeed, brand: BrandSeed, direction: 
       body: direction === "editorial"
         ? `Tell the story first, then resolve it with ${offer}.`
         : direction === "product"
-          ? `${offer}. Keep the proof concise and make the product the visual anchor.`
+          ? `${offer}. Keep the proof concise and make the selected products the visual anchor.`
           : `The motion treatment is ${campaign.brief_motion_level || "subtle"}; the static first frame must still communicate the core offer.`,
       align: "left",
     },
-    ...(direction === "product"
-      ? [{
-          id: "products-1",
-          type: "product-grid" as const,
-          heading: "Featured products",
-          columns: 2 as const,
-          products: [
-            {
-              id: "featured-one",
-              title: "Featured product one",
-              price: "Add price",
-              image: { src: "https://images.example.com/product-one.jpg", alt: "Featured product one" },
-              href: `${baseUrl}/products/featured-one`,
-            },
-            {
-              id: "featured-two",
-              title: "Featured product two",
-              price: "Add price",
-              image: { src: "https://images.example.com/product-two.jpg", alt: "Featured product two" },
-              href: `${baseUrl}/products/featured-two`,
-            },
-          ],
-        }]
-      : []),
+    {
+      id: "products-1",
+      type: "product-grid",
+      heading: direction === "editorial" ? "Shop the story" : direction === "motion" ? "Featured in this drop" : "Featured products",
+      columns: 2,
+      products: products.map((product) => ({
+        id: product.id,
+        title: product.title,
+        price: productPrice(product),
+        image: {
+          src: product.image_url || "https://images.example.com/product-placeholder.jpg",
+          alt: product.title,
+        },
+        href: product.product_url || `${baseUrl}/products`,
+      })),
+    },
     {
       id: "footer-1",
       type: "footer",
@@ -240,10 +258,10 @@ export async function selectCreativeDirection(
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   if (claimsError || !claimsData?.claims?.sub) redirect("/auth/sign-in");
 
-  const [{ data: campaignData, error: campaignError }, { data: brandData, error: brandError }] = await Promise.all([
+  const [{ data: campaignData, error: campaignError }, { data: brandData, error: brandError }, { data: links, error: linksError }] = await Promise.all([
     supabase
       .from("campaigns")
-      .select("id,name,current_version_number,brief_goal,brief_audience,brief_offer,brief_tone,brief_motion_level")
+      .select("id,name,current_version_number,product_selection_completed_at,brief_goal,brief_audience,brief_offer,brief_tone,brief_motion_level")
       .eq("workspace_id", workspaceId)
       .eq("brand_id", brandId)
       .eq("id", campaignId)
@@ -254,18 +272,44 @@ export async function selectCreativeDirection(
       .eq("workspace_id", workspaceId)
       .eq("id", brandId)
       .maybeSingle(),
+    supabase
+      .from("campaign_products")
+      .select("product_id,position")
+      .eq("workspace_id", workspaceId)
+      .eq("campaign_id", campaignId)
+      .order("position", { ascending: true }),
   ]);
 
-  if (campaignError || brandError || !campaignData || !brandData) {
+  if (campaignError || brandError || linksError || !campaignData || !brandData) {
     redirect(`${path}?error=direction-save-failed`);
   }
 
   const campaign = campaignData as CampaignSeed;
+  if (!campaign.product_selection_completed_at || !links?.length) {
+    redirect(productsPath(workspaceId, brandId, campaignId));
+  }
+
+  const productIds = links.map((link) => String(link.product_id));
+  const { data: productData, error: productError } = await supabase
+    .from("products")
+    .select("id,title,price_amount,currency,image_url,product_url")
+    .eq("workspace_id", workspaceId)
+    .eq("brand_id", brandId)
+    .in("id", productIds);
+
+  if (productError || !productData || productData.length !== productIds.length) {
+    redirect(`${path}?error=direction-seed-failed`);
+  }
+
+  const byId = new Map((productData as ProductSeed[]).map((product) => [product.id, product]));
+  const products = productIds.map((id) => byId.get(id)).filter((product): product is ProductSeed => Boolean(product));
+  if (products.length !== productIds.length) redirect(`${path}?error=direction-seed-failed`);
+
   const brand = brandData as BrandSeed;
-  const source = directionDocument(campaign, brand, directionKey);
+  const source = directionDocument(campaign, brand, directionKey, products);
   const validation = validateCampaignDocument(source);
   if (!validation.success || !validation.data) {
-    redirect(`${path}?error=direction-save-failed`);
+    redirect(`${path}?error=direction-seed-failed`);
   }
 
   const canonicalSource = stableStringify(validation.data);
@@ -279,7 +323,7 @@ export async function selectCreativeDirection(
     source_sha256: sourceSha256,
   });
 
-  if (seedError) redirect(`${path}?error=direction-save-failed`);
+  if (seedError) redirect(`${path}?error=direction-seed-failed`);
 
   revalidatePath(path);
   revalidatePath(`/workspaces/${workspaceId}/brands/${brandId}`);
