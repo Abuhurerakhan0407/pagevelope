@@ -4,7 +4,7 @@ import test from "node:test";
 
 const migrationPath = new URL("../../supabase/migrations/20260816170000_tenant_foundation.sql", import.meta.url);
 const sql = readFileSync(migrationPath, "utf8");
-const normalized = sql.replace(/--.*$/gm, "").replace(/\s+/g, " ").toLowerCase();
+const normalized = sql.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim().toLowerCase();
 
 const applicationTables = [
   "profiles",
@@ -77,6 +77,6 @@ test("original asset storage is private and workspace scoped", () => {
 
 test("migration is transactional and marked as not production-applied", () => {
   assert.match(sql, /IMPORTANT: authoring this migration does not apply it to production\./);
-  assert.match(normalized, /^ begin;/);
-  assert.match(normalized, / commit;$/);
+  assert.match(normalized, /^begin;/);
+  assert.match(normalized, /commit;$/);
 });
