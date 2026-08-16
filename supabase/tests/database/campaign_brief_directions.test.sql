@@ -32,6 +32,38 @@ values
   ('61200000-0000-4000-8000-000000000001', '61000000-0000-4000-8000-000000000001', '61100000-0000-4000-8000-000000000001', 'Orbit Launch', '60000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001'),
   ('62200000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000001', '62100000-0000-4000-8000-000000000001', 'Tenant B Launch', '60000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000002');
 
+-- Campaign briefs now deliberately require an actual selected product. Seed one valid
+-- same-brand product/link as test setup without consuming pgTAP assertions.
+insert into public.products (
+  id, workspace_id, brand_id, source, title, sku, price_amount, currency,
+  image_url, product_url, created_by
+) values (
+  '61300000-0000-4000-8000-000000000001',
+  '61000000-0000-4000-8000-000000000001',
+  '61100000-0000-4000-8000-000000000001',
+  'manual'::public.product_source,
+  'Orbit Bottle',
+  'ORB-BRIEF-001',
+  2499.00,
+  'INR',
+  'https://images.example.com/orbit-brief.jpg',
+  'https://example.com/products/orbit-brief',
+  '60000000-0000-4000-8000-000000000001'
+);
+
+insert into public.campaign_products (workspace_id, campaign_id, product_id, position)
+values (
+  '61000000-0000-4000-8000-000000000001',
+  '61200000-0000-4000-8000-000000000001',
+  '61300000-0000-4000-8000-000000000001',
+  1
+);
+
+update public.campaigns
+set product_selection_completed_at = now(),
+    updated_by = '60000000-0000-4000-8000-000000000001'
+where id = '61200000-0000-4000-8000-000000000001';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"60000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 
