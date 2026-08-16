@@ -119,7 +119,7 @@ export default async function BrandOverviewPage({ params, searchParams }: PagePr
             </div>
             <div className={styles.nextCard}>
               <strong>Next: real campaign persistence</strong>
-              <p>The next build gate binds campaigns and immutable versions to this brand instead of the builder's demo state.</p>
+              <p>The next build gate binds campaigns and immutable versions to this brand instead of the builder&apos;s demo state.</p>
               <Link className={styles.nextButton} href="/builder">Preview current builder</Link>
             </div>
           </aside>
