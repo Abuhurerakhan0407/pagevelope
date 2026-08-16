@@ -91,9 +91,12 @@ reset role;
 -- ADMIN A: can update workspace and remove non-owner members, but cannot grant owner.
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"00000000-0000-4000-8000-000000000002"}', true);
 set local role authenticated;
-select extensions.is(
-  (with changed as (update public.workspaces set name = 'Workspace A updated' where id = '10000000-0000-4000-8000-000000000001' returning id) select count(*) from changed),
-  1::bigint,
+select extensions.results_eq(
+  $$update public.workspaces
+    set name = 'Workspace A updated'
+    where id = '10000000-0000-4000-8000-000000000001'
+    returning id$$,
+  $$values ('10000000-0000-4000-8000-000000000001'::uuid)$$,
   'admin can update workspace settings'
 );
 select extensions.throws_ok(
@@ -102,9 +105,12 @@ select extensions.throws_ok(
   null,
   'admin cannot promote a member to owner'
 );
-select extensions.is(
-  (with removed as (delete from public.workspace_memberships where workspace_id = '10000000-0000-4000-8000-000000000001' and user_id = '00000000-0000-4000-8000-000000000007' returning user_id) select count(*) from removed),
-  1::bigint,
+select extensions.results_eq(
+  $$delete from public.workspace_memberships
+    where workspace_id = '10000000-0000-4000-8000-000000000001'
+      and user_id = '00000000-0000-4000-8000-000000000007'
+    returning user_id$$,
+  $$values ('00000000-0000-4000-8000-000000000007'::uuid)$$,
   'admin can remove a non-owner member'
 );
 select extensions.is((select count(*) from public.audit_events), 1::bigint, 'admin can read only own workspace audit events');
