@@ -45,6 +45,9 @@ jobs:
       - name: Replay migrations from scratch
         run: supabase db reset --local
 
+      - name: Run adversarial RLS tests
+        run: supabase test db
+
       - name: Stop local database
         if: always()
         run: supabase stop --no-backup || true
