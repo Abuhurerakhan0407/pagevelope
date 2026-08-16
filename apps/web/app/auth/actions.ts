@@ -5,16 +5,16 @@ import { redirect } from "next/navigation";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
-function readCredentials(formData: FormData) {
+function readCredentials(formData: FormData, returnPath: "/auth/sign-in" | "/auth/sign-up") {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !email.includes("@")) {
-    redirect("/auth/sign-in?error=invalid-email");
+    redirect(`${returnPath}?error=invalid-email`);
   }
 
   if (password.length < 8) {
-    redirect("/auth/sign-in?error=invalid-password");
+    redirect(`${returnPath}?error=invalid-password`);
   }
 
   return { email, password };
@@ -25,7 +25,7 @@ export async function signIn(formData: FormData) {
     redirect("/auth/sign-in?error=supabase-not-configured");
   }
 
-  const credentials = readCredentials(formData);
+  const credentials = readCredentials(formData, "/auth/sign-in");
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(credentials);
 
@@ -42,7 +42,7 @@ export async function signUp(formData: FormData) {
     redirect("/auth/sign-up?error=supabase-not-configured");
   }
 
-  const credentials = readCredentials(formData);
+  const credentials = readCredentials(formData, "/auth/sign-up");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp(credentials);
 
