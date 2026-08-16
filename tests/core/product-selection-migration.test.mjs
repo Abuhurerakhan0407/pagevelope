@@ -3,8 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migrationPath = new URL("../../supabase/migrations/20260816210000_product_selection.sql", import.meta.url);
+const integrityPath = new URL("../../supabase/migrations/20260816211000_product_selection_integrity.sql", import.meta.url);
 const sql = readFileSync(migrationPath, "utf8");
+const integritySql = readFileSync(integrityPath, "utf8");
 const normalized = sql.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim().toLowerCase();
+const normalizedIntegrity = integritySql.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim().toLowerCase();
 
 test("product catalog and campaign selection are tenant-scoped and RLS protected", () => {
   assert.match(normalized, /create table public\.products/);
@@ -40,6 +43,7 @@ test("changing products invalidates downstream brief and direction state", () =>
   assert.match(normalized, /creative_directions = '\[\]'::jsonb/);
   assert.match(normalized, /selected_direction_key = null/);
   assert.match(normalized, /campaigns_require_products_before_brief/);
+  assert.match(normalizedIntegrity, /campaign_products_invalidate_downstream/);
 });
 
 test("product RPCs are security-definer, permission checked, and authenticated-only", () => {
@@ -52,4 +56,21 @@ test("product RPCs are security-definer, permission checked, and authenticated-o
   assert.match(normalized, /grant execute on function public\.create_manual_product/);
   assert.match(normalized, /revoke all on function public\.set_campaign_products/);
   assert.match(normalized, /grant execute on function public\.set_campaign_products/);
+});
+
+test("authenticated clients can read product selection but cannot mutate tables directly", () => {
+  assert.match(normalizedIntegrity, /revoke all on public\.products from anon, authenticated/);
+  assert.match(normalizedIntegrity, /revoke all on public\.campaign_products from anon, authenticated/);
+  assert.match(normalizedIntegrity, /grant select on public\.products to authenticated/);
+  assert.match(normalizedIntegrity, /grant select on public\.campaign_products to authenticated/);
+  assert.doesNotMatch(normalizedIntegrity, /grant (?:insert|update|delete|select, insert|all).*public\.products to authenticated/);
+  assert.doesNotMatch(normalizedIntegrity, /grant (?:insert|update|delete|select, insert|all).*public\.campaign_products to authenticated/);
+});
+
+test("database-level integrity prevents cross-brand links and stale downstream state", () => {
+  assert.match(normalizedIntegrity, /campaign_products_require_same_brand/);
+  assert.match(normalizedIntegrity, /campaign_brand_id <> product_brand_id/);
+  assert.match(normalizedIntegrity, /campaigns_require_product_integrity/);
+  assert.match(normalizedIntegrity, /campaign product selection must contain between one and six products/);
+  assert.match(normalizedIntegrity, /selected direction must exist in the generated direction set/);
 });
