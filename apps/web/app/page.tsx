@@ -16,7 +16,7 @@ export default function Home() {
           <span className="brandMark">P</span>
           <span>Pagevelope</span>
         </a>
-        <span className="phaseBadge">Phase 0 · Foundation</span>
+        <span className="phaseBadge">Build · Visual Builder v1</span>
       </header>
 
       <section className="hero" id="top">
@@ -27,21 +27,21 @@ export default function Home() {
           and traceable publishing.
         </p>
         <div className="actions">
-          <a className="primaryButton" href="#roadmap">View build roadmap</a>
-          <a className="secondaryButton" href="#rules">Read product rules</a>
+          <a className="primaryButton" href="/builder">Open visual builder</a>
+          <a className="secondaryButton" href="#roadmap">View build roadmap</a>
         </div>
       </section>
 
-      <section className="statusGrid" aria-label="Product foundation status">
+      <section className="statusGrid" aria-label="Product build status">
         <article className="statusCard">
           <span>Current work</span>
-          <strong>Repository foundation</strong>
-          <p>Canonical scope, architecture, security, CI, and agent ownership.</p>
+          <strong>Professional visual builder</strong>
+          <p>Block library, layers, constrained canvas, properties, previews, and QA-aware publishing controls.</p>
         </article>
         <article className="statusCard">
-          <span>First product proof</span>
-          <strong>Deterministic renderer</strong>
-          <p>Structured campaign JSON mapped into controlled MJML with repeatable test evidence.</p>
+          <span>Production proof</span>
+          <strong>Renderer hardening</strong>
+          <p>Controlled MJML, strict compile, deterministic release bundles, and a twenty-campaign safety matrix.</p>
         </article>
         <article className="statusCard">
           <span>Release boundary</span>
@@ -57,7 +57,7 @@ export default function Home() {
         </div>
         <ol>
           {phases.map((phase, index) => (
-            <li className={index === 0 ? "activePhase" : undefined} key={phase}>
+            <li className={index === 2 ? "activePhase" : undefined} key={phase}>
               <span>{String(index).padStart(2, "0")}</span>
               <strong>{phase}</strong>
             </li>
