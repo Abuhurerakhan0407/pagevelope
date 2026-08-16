@@ -12,6 +12,7 @@ import {
   type CampaignBuildContext,
 } from "./build-campaign";
 import styles from "./builder.module.css";
+import { MotionControls } from "./motion-controls";
 
 type ViewMode = "desktop" | "mobile" | "images-off" | "rendered";
 type BlockKind = BuilderBlockKind;
@@ -534,6 +535,8 @@ export default function BuilderPage() {
                   <input value={selected.cta} onChange={(event) => updateSelected({ cta: event.target.value })} />
                 </label>
               ) : null}
+
+              <MotionControls block={selected} onChange={updateSelected} />
 
               <div className={styles.propertyGroup}>
                 <span className={styles.propertyTitle}>Layout</span>
