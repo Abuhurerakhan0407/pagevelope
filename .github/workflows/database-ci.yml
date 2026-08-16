@@ -1,0 +1,50 @@
+name: Database CI
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "tests/core/supabase-migration.test.mjs"
+      - ".github/workflows/database-ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - "tests/core/supabase-migration.test.mjs"
+      - ".github/workflows/database-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  migrations:
+    name: supabase-migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI 2.114.0
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
+        with:
+          version: 2.114.0
+
+      - name: Initialize local Supabase config
+        shell: bash
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init
+          fi
+
+      - name: Apply migrations to a fresh local database
+        run: supabase db start
+
+      - name: Replay migrations from scratch
+        run: supabase db reset --local
+
+      - name: Stop local database
+        if: always()
+        run: supabase stop --no-backup || true
