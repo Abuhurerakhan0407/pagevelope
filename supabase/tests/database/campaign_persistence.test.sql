@@ -28,6 +28,7 @@ values
   ('52100000-0000-4000-8000-000000000001', '52000000-0000-4000-8000-000000000001', 'Campaign Brand B', 'campaign-brand-b', '50000000-0000-4000-8000-000000000002');
 
 create temporary table campaign_test_state (campaign_id uuid not null);
+grant select, insert on campaign_test_state to authenticated;
 
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"50000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
