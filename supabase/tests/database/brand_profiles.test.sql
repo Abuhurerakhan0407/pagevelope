@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(9);
+select extensions.plan(10);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -26,17 +26,20 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000
 set local role authenticated;
 
 select extensions.lives_ok(
-  $$insert into public.brands (
-      workspace_id, name, slug, created_by, primary_color, accent_color,
-      background_color, text_color, font_family, website_url, company_name,
-      legal_address, onboarding_completed_at
-    ) values (
-      '41000000-0000-4000-8000-000000000001', 'Northstar', 'northstar',
-      '40000000-0000-4000-8000-000000000001', '#111111', '#6F5CFB',
-      '#FFFFFF', '#0F1221', 'Inter', 'https://northstar.example',
-      'Northstar Commerce Pvt Ltd', 'Mumbai, Maharashtra, India', now()
+  $$select public.create_brand_profile(
+      '41000000-0000-4000-8000-000000000001',
+      'Northstar',
+      'northstar',
+      '#111111',
+      '#6F5CFB',
+      '#FFFFFF',
+      '#0F1221',
+      'Inter',
+      'https://northstar.example',
+      'Northstar Commerce Pvt Ltd',
+      'Mumbai, Maharashtra, India'
     )$$,
-  'owner can create a complete brand profile in own workspace'
+  'owner can create a complete brand profile atomically'
 );
 
 select extensions.is(
@@ -48,28 +51,34 @@ select extensions.is(
 select extensions.is(
   (select primary_color from public.brands where slug = 'northstar'),
   '#111111'::text,
-  'brand color is persisted exactly'
+  'brand color is normalized and persisted'
+);
+
+select extensions.is(
+  (select count(*) from public.audit_events where action = 'brand.created'),
+  1::bigint,
+  'brand creation writes an audit event'
 );
 
 select extensions.throws_ok(
-  $$insert into public.brands (workspace_id, name, slug, created_by, primary_color)
-    values ('41000000-0000-4000-8000-000000000001', 'Bad Color', 'bad-color', '40000000-0000-4000-8000-000000000001', 'purple')$$,
+  $$select public.create_brand_profile('41000000-0000-4000-8000-000000000001', 'Bad Color', 'bad-color', 'purple')$$,
   '23514',
   null,
   'invalid primary color fails closed'
 );
 
 select extensions.throws_ok(
-  $$insert into public.brands (workspace_id, name, slug, created_by, website_url)
-    values ('41000000-0000-4000-8000-000000000001', 'Bad URL', 'bad-url', '40000000-0000-4000-8000-000000000001', 'http://insecure.example')$$,
+  $$select public.create_brand_profile(
+      '41000000-0000-4000-8000-000000000001', 'Bad URL', 'bad-url',
+      '#6F5CFB', '#A78BFA', '#FFFFFF', '#0F1221', 'Inter', 'http://insecure.example'
+    )$$,
   '23514',
   null,
   'non-https brand website is rejected'
 );
 
 select extensions.throws_ok(
-  $$insert into public.brands (workspace_id, name, slug, created_by)
-    values ('42000000-0000-4000-8000-000000000001', 'Cross tenant', 'cross-tenant', '40000000-0000-4000-8000-000000000001')$$,
+  $$select public.create_brand_profile('42000000-0000-4000-8000-000000000001', 'Cross tenant', 'cross-tenant')$$,
   '42501',
   null,
   'owner cannot create brand in another workspace'
@@ -80,8 +89,7 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000
 set local role authenticated;
 
 select extensions.lives_ok(
-  $$insert into public.brands (workspace_id, name, slug, created_by)
-    values ('42000000-0000-4000-8000-000000000001', 'Tenant B Brand', 'tenant-b-brand', '40000000-0000-4000-8000-000000000002')$$,
+  $$select public.create_brand_profile('42000000-0000-4000-8000-000000000001', 'Tenant B Brand', 'tenant-b-brand')$$,
   'second tenant can create its own brand'
 );
 
