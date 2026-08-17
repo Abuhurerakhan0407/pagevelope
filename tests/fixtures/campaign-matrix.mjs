@@ -47,7 +47,7 @@ export const campaignFixtures = directions.map(([slug, label, align, columns], i
       id: `p3-${number}`,
       title: "Orbit / Sand",
       price: "₹2,499",
-      image: { src: "https://images.example.com/orbit-sand.jpg", alt: "Sand Orbit bottle" },
+      image: { src: "https://cdn.northstargoods.in/assets/orbit-sand.jpg", alt: "Sand Orbit bottle" },
       href: "https://example.com/products/orbit-sand"
     });
   }

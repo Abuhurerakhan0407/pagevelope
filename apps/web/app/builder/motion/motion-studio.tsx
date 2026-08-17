@@ -318,8 +318,8 @@ export default function MotionStudio({ workspaceId, campaignId }: { workspaceId:
     await persist(replaceTargetImage(document, selected.key, nextImage), "Motion removed. The proven first frame is now the static production image.");
   }
 
-  const builderHref = workspaceId && campaignId
-    ? `/builder?workspaceId=${encodeURIComponent(workspaceId)}&campaignId=${encodeURIComponent(campaignId)}`
+  const builderHref = workspaceId && brandId && campaignId
+    ? `/builder?workspaceId=${encodeURIComponent(workspaceId)}&brandId=${encodeURIComponent(brandId)}&campaignId=${encodeURIComponent(campaignId)}`
     : "/builder";
 
   return (

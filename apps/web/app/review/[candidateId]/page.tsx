@@ -162,10 +162,19 @@ export default async function ReleaseReviewPage({ params, searchParams }: PagePr
   }
 
   const candidate = candidateResult.data as Candidate;
+  const { data: campaignData, error: campaignError } = await supabase
+    .from("campaigns")
+    .select("id,brand_id")
+    .eq("workspace_id", workspaceId)
+    .eq("id", candidate.campaign_id)
+    .maybeSingle();
+  if (campaignError) redirect("/dashboard");
+
   const evidence = (evidenceResult.data ?? []) as Evidence[];
   const testSends = (testSendResult.data ?? []) as TestSend[];
   const approvals = (approvalResult.data ?? []) as Approval[];
   const readiness = readinessResult.data as Readiness;
+  const campaign = campaignData as { id: string; brand_id: string } | null;
   const latestEvidence = new Map<string, Evidence>();
   for (const item of evidence) {
     if (!latestEvidence.has(item.client_key)) latestEvidence.set(item.client_key, item);
@@ -175,7 +184,10 @@ export default async function ReleaseReviewPage({ params, searchParams }: PagePr
   const sendTestEmail = sendTestEmailAction.bind(null, workspaceId, candidateId);
   const recordApproval = recordApprovalAction.bind(null, workspaceId, candidateId);
   const finalizeApproval = finalizeApprovalAction.bind(null, workspaceId, candidateId);
-  const builderUrl = `/builder?workspaceId=${encodeURIComponent(workspaceId)}&campaignId=${encodeURIComponent(candidate.campaign_id)}`;
+  const builderQuery = new URLSearchParams({ workspaceId, campaignId: candidate.campaign_id });
+  const brandId = campaign?.brand_id?.trim() ?? "";
+  if (brandId) builderQuery.set("brandId", brandId);
+  const builderUrl = `/builder?${builderQuery.toString()}`;
   const inboxPassed = readiness.passed_client_count === readiness.required_client_count;
   const testPassed = readiness.successful_test_send_count > 0;
 

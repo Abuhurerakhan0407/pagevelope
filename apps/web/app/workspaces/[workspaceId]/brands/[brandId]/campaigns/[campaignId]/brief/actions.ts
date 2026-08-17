@@ -86,7 +86,7 @@ function directionDocument(
   const tone = campaign.brief_tone || "clear and confident";
   const leadProduct = products[0];
   const leadHref = leadProduct?.product_url || `${baseUrl}/products`;
-  const leadImage = leadProduct?.image_url || "https://images.example.com/product-placeholder.jpg";
+  const leadImage = leadProduct?.image_url || "";
 
   const hero = direction === "editorial"
     ? {
@@ -122,13 +122,15 @@ function directionDocument(
       eyebrow: hero.eyebrow,
       heading: hero.heading,
       body: hero.body,
-      image: {
-        src: leadImage,
-        alt: direction === "motion"
-          ? `Static first frame featuring ${leadProduct?.title || campaign.name}`
-          : `${leadProduct?.title || campaign.name} campaign hero`,
-        width: 520,
-      },
+      image: leadImage
+        ? {
+            src: leadImage,
+            alt: direction === "motion"
+              ? `Static first frame featuring ${leadProduct?.title || campaign.name}`
+              : `${leadProduct?.title || campaign.name} campaign hero`,
+            width: 520,
+          }
+        : undefined,
       cta: { label: hero.cta, href: leadHref },
       align: direction === "editorial" ? "left" : "center",
       backgroundColor: direction === "product" ? asHex(brand.background_color) : asHex(brand.accent_color),
@@ -154,7 +156,7 @@ function directionDocument(
         title: product.title,
         price: productPrice(product),
         image: {
-          src: product.image_url || "https://images.example.com/product-placeholder.jpg",
+          src: product.image_url ?? "",
           alt: product.title,
         },
         href: product.product_url || `${baseUrl}/products`,
@@ -304,6 +306,10 @@ export async function selectCreativeDirection(
   const byId = new Map((productData as ProductSeed[]).map((product) => [product.id, product]));
   const products = productIds.map((id) => byId.get(id)).filter((product): product is ProductSeed => Boolean(product));
   if (products.length !== productIds.length) redirect(`${path}?error=direction-seed-failed`);
+
+  if (products.some((product) => !product.image_url?.trim())) {
+    redirect(`${path}?error=product-images-required`);
+  }
 
   const brand = brandData as BrandSeed;
   const source = directionDocument(campaign, brand, directionKey, products);

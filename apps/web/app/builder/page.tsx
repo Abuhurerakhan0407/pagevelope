@@ -90,6 +90,10 @@ const initialBlocks: CanvasBlock[] = [
     label: "Product grid",
     title: "Choose your finish",
     body: "Orbit / Lilac · ₹2,499\nOrbit / Ink · ₹2,499",
+    products: [
+      { id: "products-1-lilac", title: "Orbit / Lilac", price: "₹2,499", imageSrc: "https://images.example.com/product-one.jpg", imageAlt: "Lilac Orbit bottle" },
+      { id: "products-1-ink", title: "Orbit / Ink", price: "₹2,499", imageSrc: "https://images.example.com/product-two.jpg", imageAlt: "Ink Orbit bottle" },
+    ],
   },
   {
     id: "footer-1",
@@ -99,6 +103,18 @@ const initialBlocks: CanvasBlock[] = [
     body: "12 Market Road, Mumbai, Maharashtra 400001, India",
   },
 ];
+
+const BLOCKED_IMAGE_HOSTS = ["example.com", "images.example.com", "localhost", "127.0.0.1", "0.0.0.0", "::1"];
+
+function isPlaceholderImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/^www\./, "");
+    return host === "example.com" || host.endsWith(".example.com") || BLOCKED_IMAGE_HOSTS.includes(host);
+  } catch {
+    return false;
+  }
+}
 
 const library: Array<{ kind: BlockKind; label: string; symbol: string }> = [
   { kind: "header", label: "Header", symbol: "H" },
@@ -127,12 +143,19 @@ function makeBlock(kind: BlockKind, label: string): CanvasBlock {
     footer: { title: "Company name", body: "Physical business address" },
   };
 
-  return {
+  const block: CanvasBlock = {
     id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     kind,
     label,
     ...defaults[kind],
   };
+  if (kind === "products") {
+    block.products = [
+      { id: `${block.id}-one`, title: "Featured product one", price: "₹2,499", imageSrc: "https://images.example.com/product-one.jpg", imageAlt: "Featured product one" },
+      { id: `${block.id}-two`, title: "Featured product two", price: "₹2,499", imageSrc: "https://images.example.com/product-two.jpg", imageAlt: "Featured product two" },
+    ];
+  }
+  return block;
 }
 
 function blocksForContext(context: CampaignBuildContext): CanvasBlock[] {
@@ -263,6 +286,19 @@ export default function BuilderPage() {
 
   function updateSelected(patch: Partial<CanvasBlock>) {
     setBlocks((current) => current.map((block) => (block.id === selectedId ? { ...block, ...patch } : block)));
+    markDirty();
+  }
+
+  function updateProductImage(index: number, key: "imageSrc" | "imageAlt", value: string) {
+    setBlocks((current) =>
+      current.map((block) => {
+        if (block.id !== selectedId || block.kind !== "products" || !block.products) return block;
+        const products = block.products.map((product, productIndex) =>
+          productIndex === index ? { ...product, [key]: value } : product,
+        );
+        return { ...block, products };
+      }),
+    );
     markDirty();
   }
 
@@ -521,7 +557,7 @@ export default function BuilderPage() {
                 <input value={selected.title} onChange={(event) => updateSelected({ title: event.target.value })} />
               </label>
 
-              {selected.body !== undefined ? (
+              {selected.kind !== "image" && selected.body !== undefined ? (
                 <label>
                   <span>Body</span>
                   <textarea rows={5} value={selected.body} onChange={(event) => updateSelected({ body: event.target.value })} />
@@ -533,6 +569,66 @@ export default function BuilderPage() {
                   <span>CTA label</span>
                   <input value={selected.cta} onChange={(event) => updateSelected({ cta: event.target.value })} />
                 </label>
+              ) : null}
+
+              {selected.kind === "hero" || selected.kind === "image" ? (
+                <>
+                  <label>
+                    <span>Image URL</span>
+                    <input
+                      type="url"
+                      value={selected.imageSrc ?? ""}
+                      placeholder="https://cdn.yourbrand.com/…"
+                      onChange={(event) => updateSelected({ imageSrc: event.target.value })}
+                    />
+                  </label>
+                  {!selected.imageSrc?.trim() ? (
+                    <p className={styles.propertyHint}>Set an image URL before rendering or saving. Release QA blocks placeholder hosts.</p>
+                  ) : isPlaceholderImageUrl(selected.imageSrc) ? (
+                    <p className={styles.propertyWarning}>Development/placeholder image URLs are blocked at release. Replace this with a production asset URL.</p>
+                  ) : null}
+                  <label>
+                    <span>Alt text</span>
+                    <input
+                      value={selected.imageAlt ?? ""}
+                      onChange={(event) => {
+                        const imageAlt = event.target.value;
+                        if (selected.kind === "image") updateSelected({ imageAlt, body: `Alt text: ${imageAlt}` });
+                        else updateSelected({ imageAlt });
+                      }}
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              {selected.kind === "products" ? (
+                <div className={styles.propertyGroup}>
+                  <span className={styles.propertyTitle}>Product images</span>
+                  {(selected.products?.length ? selected.products : []).map((product, index) => (
+                    <div className={styles.productImageEditor} key={product.id}>
+                      <div className={styles.productMeta}>
+                        <span>{product.title}</span>
+                        <small>{product.price ?? ""}</small>
+                      </div>
+                      <label>
+                        <span>Image URL</span>
+                        <input
+                          type="url"
+                          value={product.imageSrc ?? ""}
+                          placeholder="https://cdn.yourbrand.com/…"
+                          onChange={(event) => updateProductImage(index, "imageSrc", event.target.value)}
+                        />
+                      </label>
+                      {isPlaceholderImageUrl(product.imageSrc) ? (
+                        <p className={styles.propertyWarning}>Development/placeholder image URLs are blocked at release.</p>
+                      ) : null}
+                      <label>
+                        <span>Alt text</span>
+                        <input value={product.imageAlt ?? ""} onChange={(event) => updateProductImage(index, "imageAlt", event.target.value)} />
+                      </label>
+                    </div>
+                  ))}
+                </div>
               ) : null}
 
               <div className={styles.propertyGroup}>
