@@ -14,7 +14,7 @@
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 60px rgba(15, 18, 33, 0.16);
-  color: #0f1221;
+  color: var(--pv-ink);
 }
 
 .launcher > div {
@@ -23,7 +23,7 @@
 }
 
 .kicker {
-  color: #6f5cfb;
+  color: var(--pv-primary);
   text-transform: uppercase;
   letter-spacing: 0.09em;
   font-size: 9px;
@@ -35,21 +35,21 @@
 }
 
 .launcher small {
-  color: #6b7280;
+  color: var(--pv-muted);
   font-size: 10px;
 }
 
 .launcher button {
   border: 0;
-  border-radius: 11px;
-  background: #6f5cfb;
+  border-radius: 12px;
+  background: var(--pv-primary);
   color: white;
   font: inherit;
   font-size: 12px;
   font-weight: 800;
-  padding: 10px 12px;
+  padding: 10px 16px;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(111, 92, 251, 0.24);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
 }
 
 .launcher button:disabled {
