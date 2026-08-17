@@ -40,6 +40,7 @@ const errorMessages: Record<string, string> = {
   "invalid-direction": "Choose one of the three generated creative directions.",
   "direction-save-failed": "The creative direction could not be selected.",
   "direction-seed-failed": "The selected direction could not be converted into a valid first campaign version.",
+  "product-images-required": "Every selected product needs an image before the campaign can be generated. Add product images and try again.",
 };
 
 const systemLabels: Record<string, string> = {

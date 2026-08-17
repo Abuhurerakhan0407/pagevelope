@@ -368,6 +368,11 @@
 .blockActions { gap: 7px; padding-top: 8px; }
 .blockActions button { flex: 1; min-height: 34px; border-radius: 9px; background: #f5f5f8; color: #555a6b; font-size: 9px; font-weight: 800; }
 .blockActions .dangerButton { color: #aa4453; background: #fff1f3; }
+.propertyHint { margin: -6px 0 10px; color: #8a6d3b; font-size: 9px; line-height: 1.45; }
+.propertyWarning { margin: -6px 0 10px; padding: 7px 9px; border-radius: 8px; background: #fff1f2; border: 1px solid #fecdd3; color: #a23a4a; font-size: 9px; font-weight: 700; line-height: 1.45; }
+.productImageEditor { margin: 0 0 12px; padding: 10px; border: 1px solid #ececf2; border-radius: 10px; background: #fafbfd; }
+.productImageEditor .productMeta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #333746; font-size: 10px; font-weight: 750; }
+.productImageEditor .productMeta small { color: #737888; font-weight: 600; }
 
 .qaPanel { margin: 0 12px 16px; padding: 13px; border: 1px solid #dbece3; border-radius: 13px; background: #f7fcf9; }
 .qaTitleRow { justify-content: space-between; gap: 8px; }

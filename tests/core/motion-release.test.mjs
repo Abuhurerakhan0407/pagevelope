@@ -10,11 +10,11 @@ function withHeroMotion(overrides = {}) {
   const hero = campaign.blocks.find((block) => block.type === "hero");
   hero.image = {
     ...hero.image,
-    src: "https://images.example.com/orbit-motion.gif",
+    src: "https://cdn.northstargoods.in/assets/orbit-motion.gif",
     motion: {
       kind: "gif",
-      firstFrameSrc: "https://images.example.com/orbit-first-frame.jpg",
-      previewVideoSrc: "https://images.example.com/orbit-preview.mp4",
+      firstFrameSrc: "https://cdn.northstargoods.in/assets/orbit-first-frame.jpg",
+      previewVideoSrc: "https://cdn.northstargoods.in/assets/orbit-preview.mp4",
       byteSize: 1200000,
       frameCount: 48,
       durationMs: 4000,
@@ -30,8 +30,8 @@ test("safe motion release contains animated GIF, explicit Outlook fallback, and 
 
   assert.match(release.mjml, /\[if mso\]/i);
   assert.match(release.mjml, /\[if !mso\]/i);
-  assert.ok(release.html.includes("https://images.example.com/orbit-motion.gif"));
-  assert.ok(release.html.includes("https://images.example.com/orbit-first-frame.jpg"));
+  assert.ok(release.html.includes("https://cdn.northstargoods.in/assets/orbit-motion.gif"));
+  assert.ok(release.html.includes("https://cdn.northstargoods.in/assets/orbit-first-frame.jpg"));
   assert.equal(release.manifest.motion.count, 1);
   assert.equal(release.manifest.motion.totalBytes, 1200000);
   assert.equal(release.manifest.motion.totalFrames, 48);
@@ -39,9 +39,9 @@ test("safe motion release contains animated GIF, explicit Outlook fallback, and 
   assert.deepEqual(release.manifest.motion.items[0], {
     blockId: "hero",
     target: "hero.image",
-    gifSrc: "https://images.example.com/orbit-motion.gif",
-    firstFrameSrc: "https://images.example.com/orbit-first-frame.jpg",
-    previewVideoSrc: "https://images.example.com/orbit-preview.mp4",
+    gifSrc: "https://cdn.northstargoods.in/assets/orbit-motion.gif",
+    firstFrameSrc: "https://cdn.northstargoods.in/assets/orbit-first-frame.jpg",
+    previewVideoSrc: "https://cdn.northstargoods.in/assets/orbit-preview.mp4",
     byteSize: 1200000,
     frameCount: 48,
     durationMs: 4000,
@@ -58,7 +58,7 @@ test("release fails closed when motion exceeds the hard payload limit", async ()
 
 test("motion requires a separate static first-frame asset", async () => {
   await assert.rejects(
-    () => renderCampaignRelease(withHeroMotion({ firstFrameSrc: "https://images.example.com/orbit-motion.gif" })),
+    () => renderCampaignRelease(withHeroMotion({ firstFrameSrc: "https://cdn.northstargoods.in/assets/orbit-motion.gif" })),
     /First-frame fallback must be a separate static asset from the animated GIF/,
   );
 });

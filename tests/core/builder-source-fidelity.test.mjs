@@ -14,15 +14,17 @@ test("hydrated builder blocks retain their schema-valid source block", () => {
 });
 
 test("product grids preserve selected product ids, images, prices, and hrefs after hydration", () => {
-  assert.match(source, /products: source\?\.products \?\? \[/);
+  assert.match(source, /source\?\.products \?\? \[/);
   assert.match(source, /source: block/);
   assert.match(source, /block\.products\.map/);
+  assert.match(source, /editedProduct\.imageSrc \?\? original\?\.image\.src/);
 });
 
 test("hero and button edits keep the original production destination", () => {
   assert.match(source, /href: source\?\.cta\?\.href \?\? productUrl\(context\)/);
   assert.match(source, /href: source\?\.cta\.href \?\? productUrl\(context\)/);
-  assert.match(source, /image: source\?\.image \?\?/);
+  assert.match(source, /imageEdited/);
+  assert.match(source, /image: image\?\.src \? image : undefined/);
 });
 
 test("footer production links survive visual text edits", () => {

@@ -1,4 +1,4 @@
-import type { CampaignBlock, CampaignDocumentV1, HexColor } from "@pagevelope/editor-schema";
+import type { CampaignBlock, CampaignDocumentV1, HexColor, ImageValue } from "@pagevelope/editor-schema";
 
 export type BuilderBlockKind =
   | "header"
@@ -19,6 +19,23 @@ export interface BuilderBlock {
   title: string;
   body?: string;
   cta?: string;
+  /**
+   * Editable image source for hero and standalone image blocks. Undefined means
+   * "unchanged" so untouched production media always survives edits.
+   */
+  imageSrc?: string;
+  imageAlt?: string;
+  /**
+   * Editable product images for product grids. Only image fields are edited
+   * here; product ids, titles, prices and destinations stay in `source`.
+   */
+  products?: Array<{
+    id: string;
+    title: string;
+    price?: string;
+    imageSrc: string;
+    imageAlt: string;
+  }>;
   /**
    * The last schema-valid source block. The visual builder exposes a constrained
    * subset of fields, so untouched production data (product URLs/images, hero
@@ -106,6 +123,14 @@ function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): Ca
             href: source?.cta?.href ?? productUrl(context),
           }
         : undefined;
+      const imageEdited = block.imageSrc !== undefined || block.imageAlt !== undefined;
+      const image: ImageValue | undefined = imageEdited
+        ? {
+            ...(source?.image ?? {}),
+            src: (block.imageSrc ?? source?.image?.src ?? "").trim(),
+            alt: (block.imageAlt ?? source?.image?.alt ?? "").trim(),
+          }
+        : source?.image;
       return {
         ...(source ?? {}),
         id: block.id,
@@ -113,11 +138,7 @@ function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): Ca
         eyebrow: source?.eyebrow ?? "New product",
         heading: block.title,
         body: block.body,
-        image: source?.image ?? {
-          src: "https://images.example.com/orbit.jpg",
-          alt: "Featured product campaign image",
-          width: 520,
-        },
+        image: image?.src ? image : undefined,
         cta,
         align: source?.align ?? "left",
         backgroundColor: source?.backgroundColor ?? hex(context.brand.accentColor),
@@ -136,18 +157,19 @@ function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): Ca
     }
     case "image": {
       const source = sourceOfType(block, "image");
-      const alt = (block.body ?? block.title).replace(/^Alt text:\s*/i, "");
+      const alt = block.imageAlt?.trim() || (block.body ?? block.title).replace(/^Alt text:\s*/i, "") || "";
+      const imageEdited = block.imageSrc !== undefined || block.imageAlt !== undefined;
       return {
         ...(source ?? {}),
         id: block.id,
         type: "image",
-        image: source?.image
-          ? { ...source.image, alt }
-          : {
-              src: "https://images.example.com/campaign-placeholder.jpg",
+        image: imageEdited
+          ? {
+              ...(source?.image ?? {}),
+              src: (block.imageSrc ?? source?.image?.src ?? "").trim(),
               alt,
-              width: 520,
-            },
+            }
+          : source?.image ?? { src: "https://images.example.com/campaign-placeholder.jpg", alt, width: 520 },
       };
     }
     case "button": {
@@ -165,34 +187,56 @@ function toCampaignBlock(block: BuilderBlock, context: CampaignBuildContext): Ca
     }
     case "products": {
       const source = sourceOfType(block, "product-grid");
+      const edited = block.products?.map((editedProduct) => {
+        const original = source?.products.find((product) => product.id === editedProduct.id);
+        return {
+          ...(original ?? {
+            id: editedProduct.id,
+            title: editedProduct.title,
+            price: editedProduct.price,
+            href: productUrl(context),
+          }),
+          id: editedProduct.id,
+          title: editedProduct.title.trim() || original?.title || "Featured product",
+          price: editedProduct.price?.trim() ? editedProduct.price : original?.price,
+          image: {
+            ...(original?.image ?? {}),
+            src: (editedProduct.imageSrc ?? original?.image.src ?? "").trim(),
+            alt: (editedProduct.imageAlt ?? original?.image.alt ?? "").trim(),
+          },
+        };
+      });
+      const products = edited?.length
+        ? edited
+        : source?.products ?? [
+            {
+              id: `${block.id}-one`,
+              title: "Featured product one",
+              price: "₹2,499",
+              image: {
+                src: "https://images.example.com/product-one.jpg",
+                alt: "Featured product one",
+              },
+              href: productUrl(context),
+            },
+            {
+              id: `${block.id}-two`,
+              title: "Featured product two",
+              price: "₹2,499",
+              image: {
+                src: "https://images.example.com/product-two.jpg",
+                alt: "Featured product two",
+              },
+              href: productUrl(context),
+            },
+          ];
       return {
         ...(source ?? {}),
         id: block.id,
         type: "product-grid",
         heading: block.title,
         columns: source?.columns ?? 2,
-        products: source?.products ?? [
-          {
-            id: `${block.id}-one`,
-            title: "Featured product one",
-            price: "₹2,499",
-            image: {
-              src: "https://images.example.com/product-one.jpg",
-              alt: "Featured product one",
-            },
-            href: productUrl(context),
-          },
-          {
-            id: `${block.id}-two`,
-            title: "Featured product two",
-            price: "₹2,499",
-            image: {
-              src: "https://images.example.com/product-two.jpg",
-              alt: "Featured product two",
-            },
-            href: productUrl(context),
-          },
-        ],
+        products,
       };
     }
     case "divider": {
@@ -287,6 +331,8 @@ export function builderBlocksFromCampaignDocument(document: CampaignDocumentV1):
           title: block.heading,
           body: block.body,
           cta: block.cta?.label,
+          imageSrc: block.image?.src,
+          imageAlt: block.image?.alt,
           source: block,
         });
         break;
@@ -294,7 +340,16 @@ export function builderBlocksFromCampaignDocument(document: CampaignDocumentV1):
         blocks.push({ id: block.id, kind: "text", label: "Text", title: block.heading || "Text", body: block.body, source: block });
         break;
       case "image":
-        blocks.push({ id: block.id, kind: "image", label: "Image", title: "Campaign image", body: `Alt text: ${block.image.alt}`, source: block });
+        blocks.push({
+          id: block.id,
+          kind: "image",
+          label: "Image",
+          title: "Campaign image",
+          body: `Alt text: ${block.image.alt}`,
+          imageSrc: block.image.src,
+          imageAlt: block.image.alt,
+          source: block,
+        });
         break;
       case "button":
         blocks.push({ id: block.id, kind: "button", label: "Button", title: block.cta.label, cta: block.cta.label, source: block });
@@ -306,6 +361,13 @@ export function builderBlocksFromCampaignDocument(document: CampaignDocumentV1):
           label: "Product grid",
           title: block.heading || "Featured products",
           body: block.products.map((product) => `${product.title}${product.price ? ` · ${product.price}` : ""}`).join("\n"),
+          products: block.products.map((product) => ({
+            id: product.id,
+            title: product.title,
+            price: product.price,
+            imageSrc: product.image.src,
+            imageAlt: product.image.alt,
+          })),
           source: block,
         });
         break;

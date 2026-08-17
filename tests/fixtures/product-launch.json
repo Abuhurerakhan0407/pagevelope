@@ -25,7 +25,7 @@
       "eyebrow": "New product",
       "heading": "Hydration, minus the bulk.",
       "body": "Orbit keeps a full day of water close without taking over your bag.",
-      "image": { "src": "https://images.example.com/orbit.jpg", "alt": "Orbit insulated bottle", "width": 520 },
+      "image": { "src": "https://cdn.northstargoods.in/assets/orbit.jpg", "alt": "Orbit insulated bottle", "width": 520 },
       "cta": { "label": "Shop Orbit", "href": "https://example.com/products/orbit" },
       "align": "left",
       "backgroundColor": "#EDE9FE"
@@ -37,8 +37,8 @@
       "heading": "Choose your finish",
       "columns": 2,
       "products": [
-        { "id": "p1", "title": "Orbit / Lilac", "price": "₹2,499", "image": { "src": "https://images.example.com/orbit-lilac.jpg", "alt": "Lilac Orbit bottle" }, "href": "https://example.com/products/orbit-lilac" },
-        { "id": "p2", "title": "Orbit / Ink", "price": "₹2,499", "image": { "src": "https://images.example.com/orbit-ink.jpg", "alt": "Ink Orbit bottle" }, "href": "https://example.com/products/orbit-ink" }
+        { "id": "p1", "title": "Orbit / Lilac", "price": "₹2,499", "image": { "src": "https://cdn.northstargoods.in/assets/orbit-lilac.jpg", "alt": "Lilac Orbit bottle" }, "href": "https://example.com/products/orbit-lilac" },
+        { "id": "p2", "title": "Orbit / Ink", "price": "₹2,499", "image": { "src": "https://cdn.northstargoods.in/assets/orbit-ink.jpg", "alt": "Ink Orbit bottle" }, "href": "https://example.com/products/orbit-ink" }
       ]
     },
     { "id": "footer", "type": "footer", "companyName": "Northstar Goods", "physicalAddress": "12 Market Road, Mumbai, Maharashtra 400001, India", "websiteUrl": "https://example.com", "privacyUrl": "https://example.com/privacy" }
