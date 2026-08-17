@@ -29,9 +29,9 @@
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--pv-primary);
-  color: #fff;
+  color: var(--pv-surface);
 }
 
 .backLink {
@@ -74,9 +74,9 @@
 .message {
   max-width: 760px;
   margin: 0 0 22px;
-  padding: 12px 14px;
+  padding: 10px 16px;
   border: 1px solid rgba(31, 122, 76, .16);
-  border-radius: 13px;
+  border-radius: 12px;
   background: rgba(236, 253, 245, .86);
   color: #17603d;
   font-size: 13px;
@@ -155,7 +155,7 @@
   width: 100%;
   border: 1px solid rgba(15, 18, 33, .1);
   border-radius: 12px;
-  background: #fff;
+  background: var(--pv-surface);
   color: var(--pv-ink);
   font: inherit;
   font-size: 13px;
@@ -165,13 +165,13 @@
 .input,
 .select {
   min-height: 44px;
-  padding: 0 13px;
+  padding: 10px 16px;
 }
 
 .textarea {
   min-height: 100px;
   resize: vertical;
-  padding: 12px 13px;
+  padding: 10px 16px;
   line-height: 1.5;
 }
 
@@ -204,7 +204,7 @@
   padding: 6px 9px;
   border: 1px solid rgba(15, 18, 33, .1);
   border-radius: 12px;
-  background: #fff;
+  background: var(--pv-surface);
 }
 
 .colorControl input[type="color"] {
@@ -212,7 +212,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
 }
 
@@ -236,18 +236,19 @@
 
 .primaryButton {
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   margin-top: 24px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--pv-primary);
-  color: #fff;
-  box-shadow: 0 14px 32px rgba(111, 92, 251, .23);
+  color: var(--pv-surface);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
   font: inherit;
   font-size: 13px;
   font-weight: 850;
   cursor: pointer;
 }
+.primaryButton:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(111, 92, 251, 0.28); }
 
 .side {
   position: sticky;
@@ -265,7 +266,7 @@
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid rgba(15, 18, 33, .08);
-  background: #fff;
+  background: var(--pv-surface);
 }
 
 .previewTop {
@@ -273,7 +274,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 0 12px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(15, 18, 33, .07);
   background: #f5f5f8;
 }
@@ -287,7 +288,7 @@
 
 .previewBody {
   padding: 26px 20px;
-  background: linear-gradient(150deg, #ffffff, #f7f5ff);
+  background: linear-gradient(150deg, var(--pv-surface), #f7f5ff);
 }
 
 .previewLogo {
@@ -296,9 +297,9 @@
   display: grid;
   place-items: center;
   margin-bottom: 28px;
-  border-radius: 13px;
-  background: #6F5CFB;
-  color: #fff;
+  border-radius: 12px;
+  background: var(--pv-primary);
+  color: var(--pv-surface);
   font-weight: 900;
 }
 
@@ -318,9 +319,9 @@
 .previewCta {
   display: inline-flex;
   padding: 9px 12px;
-  border-radius: 9px;
-  background: #6F5CFB;
-  color: #fff;
+  border-radius: 12px;
+  background: var(--pv-primary);
+  color: var(--pv-surface);
   font-size: 10px;
   font-weight: 800;
 }
@@ -366,10 +367,10 @@
   display: grid;
   place-items: center;
   border-radius: 24px;
-  color: #fff;
+  color: var(--pv-surface);
   font-size: 28px;
   font-weight: 900;
-  box-shadow: 0 18px 40px rgba(15, 18, 33, .12);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
 }
 
 .metaGrid {
@@ -404,7 +405,7 @@
   padding: 22px;
   border-radius: 18px;
   background: linear-gradient(145deg, #171526, #292447);
-  color: #fff;
+  color: var(--pv-surface);
 }
 
 .nextCard p {
@@ -416,11 +417,11 @@
 
 .nextButton {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
-  padding: 0 13px;
-  border-radius: 11px;
-  background: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--pv-surface);
   color: #171526;
   font-size: 12px;
   font-weight: 800;
