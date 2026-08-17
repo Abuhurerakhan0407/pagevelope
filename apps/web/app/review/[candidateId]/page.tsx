@@ -296,16 +296,16 @@ export default async function ReleaseReviewPage({ params, searchParams }: PagePr
                   <p className={styles.eyebrow}>Test delivery</p>
                   <h2>Send the exact release to one inbox</h2>
                 </div>
-                <span>{testPassed ? "Delivery proved" : inboxPassed ? "Ready for test send" : "Inbox Lab required first"}</span>
+                <span>{testPassed ? "Delivery proved" : "Ready for test send"}</span>
               </div>
-              <p className={styles.sectionCopy}>Pagevelope re-renders and fingerprint-checks this immutable candidate on the server before handing the exact HTML and plain text to the test-delivery provider.</p>
+              <p className={styles.sectionCopy}>Pagevelope re-renders and fingerprint-checks this immutable candidate before sending it. Use the delivered message to capture real inbox evidence; final approval still requires all required clients to pass.</p>
 
               <form action={sendTestEmail} className={styles.testSendForm}>
                 <label>
                   <span>Recipient email</span>
                   <input name="recipientEmail" type="email" maxLength={320} placeholder="you@brand.com" required />
                 </label>
-                <button className={styles.secondaryButton} type="submit" disabled={!inboxPassed || !readiness.current_version}>Send test email</button>
+                <button className={styles.secondaryButton} type="submit" disabled={!readiness.current_version}>Send test email</button>
               </form>
 
               {testSends.length ? (
