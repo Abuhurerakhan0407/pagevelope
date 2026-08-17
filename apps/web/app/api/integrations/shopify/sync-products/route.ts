@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchShopifyProductPage } from "@/lib/shopify/client";
+import { requireShopifyServerConfig } from "@/lib/shopify/config";
 import { getWorkspaceShopifyAccess } from "@/lib/shopify/credentials";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -53,13 +55,14 @@ export async function POST(request: Request) {
     }, { status: 502 });
   }
 
+  const admin = createAdminClient(requireShopifyServerConfig().supabaseServiceRoleKey);
   const failures: Array<{ externalId: string; message: string }> = [];
   let synced = 0;
 
   for (const product of page.products) {
     const price = Number(product.price);
     const productUrl = product.onlineStoreUrl ?? `https://${access.shop}/products/${encodeURIComponent(product.handle)}`;
-    const { error } = await supabase.rpc("upsert_shopify_product", {
+    const { error } = await admin.rpc("upsert_shopify_product_server", {
       target_workspace_id: workspaceId,
       target_brand_id: brandId,
       shopify_product_id: product.id,
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
       product_image_url: product.imageUrl ?? "",
       product_url: productUrl,
       shopify_updated_at: product.updatedAt,
+      actor_user_id: userId,
     });
     if (error) {
       failures.push({ externalId: product.id, message: error.message });
