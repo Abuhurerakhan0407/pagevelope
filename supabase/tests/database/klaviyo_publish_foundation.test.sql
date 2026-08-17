@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(8);
+select extensions.plan(9);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -66,14 +66,29 @@ select extensions.ok(
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 
-select extensions.lives_ok(
+select extensions.throws_ok(
   $$select public.record_klaviyo_publish_receipt(
       '81000000-0000-4000-8000-000000000001',
       '81200000-0000-4000-8000-000000000001',
       '81300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-a', 'campaign-a', 'message-a'
+      '2026-07-15', 'forged-template', 'forged-campaign', 'forged-message'
     )$$,
-  'workspace editor boundary can record an approved Klaviyo publish receipt'
+  '42501', null,
+  'authenticated editor cannot forge a provider-confirmed publish receipt'
+);
+
+reset role;
+set local role service_role;
+
+select extensions.lives_ok(
+  $$select public.record_klaviyo_publish_receipt_server(
+      '81000000-0000-4000-8000-000000000001',
+      '81200000-0000-4000-8000-000000000001',
+      '81300000-0000-4000-8000-000000000001',
+      '2026-07-15', 'tpl-a', 'campaign-a', 'message-a',
+      '80000000-0000-4000-8000-000000000001'
+    )$$,
+  'service role can record provider-confirmed Klaviyo completion for an authorized actor'
 );
 
 select extensions.is(
@@ -95,25 +110,27 @@ select extensions.is(
 );
 
 select extensions.throws_ok(
-  $$select public.record_klaviyo_publish_receipt(
+  $$select public.record_klaviyo_publish_receipt_server(
       '81000000-0000-4000-8000-000000000001',
       '81200000-0000-4000-8000-000000000001',
       '81300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-a', '', ''
+      '2026-07-15', 'tpl-a', '', '',
+      '80000000-0000-4000-8000-000000000001'
     )$$,
   '40001', null,
-  'already-published campaign cannot be published again through the receipt RPC'
+  'already-published campaign cannot be published again through the server receipt RPC'
 );
 
 select extensions.throws_ok(
-  $$select public.record_klaviyo_publish_receipt(
+  $$select public.record_klaviyo_publish_receipt_server(
       '82000000-0000-4000-8000-000000000001',
       '82200000-0000-4000-8000-000000000001',
       '82300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-b', '', ''
+      '2026-07-15', 'tpl-b', '', '',
+      '80000000-0000-4000-8000-000000000001'
     )$$,
   '42501', null,
-  'publisher cannot cross workspace boundaries'
+  'server receipt cannot attribute a cross-workspace actor'
 );
 
 reset role;
