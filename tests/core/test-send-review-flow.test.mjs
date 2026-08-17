@@ -7,9 +7,12 @@ const actionsPath = new URL("../../apps/web/app/review/[candidateId]/actions.ts"
 const page = readFileSync(pagePath, "utf8");
 const actions = readFileSync(actionsPath, "utf8");
 
-test("release review surfaces a provider-confirmed test send between inbox proof and approval", () => {
+test("release review lets a current immutable release be test-delivered before manual inbox proof", () => {
   assert.match(page, /Test delivery/);
   assert.match(page, /Send test email/);
+  assert.match(page, /disabled=\{!readiness\.current_version\}/);
+  assert.doesNotMatch(page, /disabled=\{!inboxPassed \|\| !readiness\.current_version\}/);
+  assert.match(page, /final approval still requires all required clients to pass/);
   assert.match(page, /successful_test_send_count/);
   assert.match(page, /Provider-confirmed test delivery exists/);
   assert.ok(page.indexOf("Test delivery") < page.indexOf("Immutable decision"));
