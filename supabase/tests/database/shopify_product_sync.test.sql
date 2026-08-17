@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(7);
+select extensions.plan(8);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -30,15 +30,33 @@ values
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 
-select extensions.lives_ok(
+select extensions.throws_ok(
   $$select public.upsert_shopify_product(
       '91000000-0000-4000-8000-000000000001',
       '91100000-0000-4000-8000-000000000001',
-      'gid://shopify/Product/1', 'Orbit Bottle', 'ORB-SHOP', 2499, 'inr',
-      'https://cdn.shopify.com/orbit.jpg', 'https://example.myshopify.com/products/orbit', now()
+      'gid://shopify/Product/1', 'Forged product', 'FORGED', 1, 'INR', '', '', now()
     )$$,
-  'editor can sync a Shopify product into its brand'
+  '42501', null,
+  'authenticated editor cannot forge a Shopify-sourced product'
 );
+
+reset role;
+set local role service_role;
+
+select extensions.lives_ok(
+  $$select public.upsert_shopify_product_server(
+      '91000000-0000-4000-8000-000000000001',
+      '91100000-0000-4000-8000-000000000001',
+      'gid://shopify/Product/1', 'Orbit Bottle', 'ORB-SHOP', 2499, 'inr',
+      'https://cdn.shopify.com/orbit.jpg', 'https://example.myshopify.com/products/orbit', now(),
+      '90000000-0000-4000-8000-000000000001'
+    )$$,
+  'service role can sync a Shopify product for an authorized workspace actor'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
+set local role authenticated;
 
 select extensions.is(
   (select source::text from public.products where external_id = 'gid://shopify/Product/1'),
@@ -52,30 +70,42 @@ select extensions.is(
   'Shopify currency is normalized'
 );
 
+reset role;
+set local role service_role;
+
 select extensions.lives_ok(
-  $$select public.upsert_shopify_product(
+  $$select public.upsert_shopify_product_server(
       '91000000-0000-4000-8000-000000000001',
       '91100000-0000-4000-8000-000000000001',
       'gid://shopify/Product/1', 'Orbit Bottle Updated', 'ORB-SHOP', 2599, 'INR',
-      'https://cdn.shopify.com/orbit-new.jpg', 'https://example.myshopify.com/products/orbit', now()
+      'https://cdn.shopify.com/orbit-new.jpg', 'https://example.myshopify.com/products/orbit', now(),
+      '90000000-0000-4000-8000-000000000001'
     )$$,
-  'repeat sync updates the same external product'
+  'repeat provider sync updates the same external product'
 );
+
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
+set local role authenticated;
 
 select extensions.is(
   (select count(*) from public.products where external_id = 'gid://shopify/Product/1'),
   1::bigint,
-  'repeat sync does not duplicate Shopify products'
+  'repeat provider sync does not duplicate Shopify products'
 );
 
+reset role;
+set local role service_role;
+
 select extensions.throws_ok(
-  $$select public.upsert_shopify_product(
+  $$select public.upsert_shopify_product_server(
       '92000000-0000-4000-8000-000000000001',
       '92100000-0000-4000-8000-000000000001',
-      'gid://shopify/Product/2', 'Cross tenant', '', 10, 'INR', '', '', now()
+      'gid://shopify/Product/2', 'Cross tenant', '', 10, 'INR', '', '', now(),
+      '90000000-0000-4000-8000-000000000001'
     )$$,
   '42501', null,
-  'Shopify sync cannot cross workspace boundaries'
+  'server sync cannot attribute a cross-workspace actor'
 );
 
 reset role;

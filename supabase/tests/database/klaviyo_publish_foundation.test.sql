@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(8);
+select extensions.plan(9);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -66,60 +66,74 @@ select extensions.ok(
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 
-select extensions.lives_ok(
+select extensions.throws_ok(
   $$select public.record_klaviyo_publish_receipt(
       '81000000-0000-4000-8000-000000000001',
       '81200000-0000-4000-8000-000000000001',
       '81300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-a', 'campaign-a', 'message-a'
+      '2026-07-15', 'forged-template', 'forged-campaign', 'forged-message'
     )$$,
-  'workspace editor boundary can record an approved Klaviyo publish receipt'
+  '42501', null,
+  'authenticated editor cannot forge a provider-confirmed publish receipt'
 );
+
+reset role;
+set local role service_role;
+select extensions.lives_ok(
+  $$select public.record_klaviyo_publish_receipt_server(
+      '81000000-0000-4000-8000-000000000001',
+      '81200000-0000-4000-8000-000000000001',
+      '81300000-0000-4000-8000-000000000001',
+      '2026-07-15', 'tpl-a', 'campaign-a', 'message-a',
+      '80000000-0000-4000-8000-000000000001'
+    )$$,
+  'service role can record provider-confirmed Klaviyo completion for an authorized actor'
+);
+reset role;
 
 select extensions.is(
   (select count(*) from public.campaign_publish_receipts where release_candidate_id = '81200000-0000-4000-8000-000000000001'),
   1::bigint,
   'one immutable publish receipt is stored'
 );
-
 select extensions.is(
   (select status::text from public.campaigns where id = '81100000-0000-4000-8000-000000000001'),
   'published'::text,
   'successful receipt advances campaign to published'
 );
-
 select extensions.is(
   (select count(*) from public.audit_events where action = 'campaign.published.klaviyo'),
   1::bigint,
   'Klaviyo publish is audited'
 );
 
+set local role service_role;
 select extensions.throws_ok(
-  $$select public.record_klaviyo_publish_receipt(
+  $$select public.record_klaviyo_publish_receipt_server(
       '81000000-0000-4000-8000-000000000001',
       '81200000-0000-4000-8000-000000000001',
       '81300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-a', '', ''
+      '2026-07-15', 'tpl-a', '', '',
+      '80000000-0000-4000-8000-000000000001'
     )$$,
   '40001', null,
-  'already-published campaign cannot be published again through the receipt RPC'
+  'already-published campaign cannot be published again through the server receipt RPC'
 );
-
 select extensions.throws_ok(
-  $$select public.record_klaviyo_publish_receipt(
+  $$select public.record_klaviyo_publish_receipt_server(
       '82000000-0000-4000-8000-000000000001',
       '82200000-0000-4000-8000-000000000001',
       '82300000-0000-4000-8000-000000000001',
-      '2026-07-15', 'tpl-b', '', ''
+      '2026-07-15', 'tpl-b', '', '',
+      '80000000-0000-4000-8000-000000000001'
     )$$,
   '42501', null,
-  'publisher cannot cross workspace boundaries'
+  'server receipt cannot attribute a cross-workspace actor'
 );
 
 reset role;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000002"}', true);
 set local role authenticated;
-
 select extensions.is(
   (select count(*) from public.campaign_publish_receipts where release_candidate_id = '81200000-0000-4000-8000-000000000001'),
   0::bigint,
