@@ -729,7 +729,13 @@ function CanvasBlockPreview({
   if (block.kind === "hero") {
     return (
       <button type="button" className={`${className} ${styles.heroBlock}`} onClick={onSelect}>
-        {!imagesOff ? <span className={styles.heroImage}>FEATURE</span> : <span className={styles.imageOff}>Image hidden · meaningful alt text preserved</span>}
+        {imagesOff ? (
+          <span className={styles.imageOff}>{block.imageAlt?.trim() ? `Image hidden · ${block.imageAlt}` : "Image hidden · meaningful alt text preserved"}</span>
+        ) : block.imageSrc?.trim() ? (
+          <img className={styles.heroImage} src={block.imageSrc} alt={block.imageAlt ?? ""} />
+        ) : (
+          <span className={styles.heroImage}>FEATURE</span>
+        )}
         <span className={styles.emailEyebrow}>NEW PRODUCT</span>
         <strong>{block.title}</strong>
         <span className={styles.emailBody}>{block.body}</span>
@@ -740,7 +746,13 @@ function CanvasBlockPreview({
   if (block.kind === "image") {
     return (
       <button type="button" className={className} onClick={onSelect}>
-        {!imagesOff ? <span className={styles.standaloneImage}>Campaign image</span> : <span className={styles.imageOff}>{block.body}</span>}
+        {imagesOff ? (
+          <span className={styles.imageOff}>{block.imageAlt?.trim() ? `Image hidden · ${block.imageAlt}` : block.body}</span>
+        ) : block.imageSrc?.trim() ? (
+          <img className={styles.standaloneImage} src={block.imageSrc} alt={block.imageAlt ?? ""} />
+        ) : (
+          <span className={styles.standaloneImage}>No image set</span>
+        )}
       </button>
     );
   }
@@ -748,18 +760,32 @@ function CanvasBlockPreview({
     return <button type="button" className={`${className} ${styles.buttonBlock}`} onClick={onSelect}><span className={styles.emailCta}>{block.cta}</span></button>;
   }
   if (block.kind === "products") {
+    const previewProducts = block.products?.length ? block.products : [];
     return (
       <button type="button" className={className} onClick={onSelect}>
         <span className={styles.sectionTitle}>{block.title}</span>
         <span className={styles.productGrid}>
-          {["One", "Two"].map((finish) => (
-            <span className={styles.productCard} key={finish}>
-              {!imagesOff ? <i>Product {finish}</i> : <i className={styles.productImageOff}>Alt: featured product {finish.toLowerCase()}</i>}
-              <b>Featured product {finish.toLowerCase()}</b>
-              <small>₹2,499</small>
+          {previewProducts.length ? previewProducts.map((product) => (
+            <span className={styles.productCard} key={product.id}>
+              {!imagesOff ? (
+                product.imageSrc?.trim() ? (
+                  <img className={styles.productImage} src={product.imageSrc} alt={product.imageAlt ?? ""} />
+                ) : (
+                  <i>No image set</i>
+                )
+              ) : (
+                <i className={styles.productImageOff}>Alt: {product.imageAlt ?? "featured product"}</i>
+              )}
+              <b>{product.title}</b>
+              {product.price ? <small>{product.price}</small> : null}
               <em>View product</em>
             </span>
-          ))}
+          )) : (
+            <span className={styles.productCard}>
+              <i>No products yet</i>
+              <b>Add products to this grid</b>
+            </span>
+          )}
         </span>
       </button>
     );

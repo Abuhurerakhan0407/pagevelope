@@ -329,6 +329,7 @@
   font-weight: 800;
 }
 .productCard .productImageOff { padding: 12px; min-height: 70px; border: 1px dashed #d2d4dc; background: #fafafa; color: #9295a0; font-size: 8px; font-weight: 600; }
+.productCard .productImage { min-height: 130px; width: 100%; object-fit: cover; border-radius: 10px; }
 .productCard b { font-size: 10px; }
 .productCard small { color: #777b89; font-size: 9px; }
 .productCard em { align-self: flex-start; margin-top: 3px; padding: 7px 9px; border-radius: 6px; background: #735dfc; color: white; font-size: 8px; font-style: normal; font-weight: 800; }
