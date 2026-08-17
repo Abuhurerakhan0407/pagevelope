@@ -54,6 +54,10 @@ select extensions.lives_ok(
   'service role can sync a Shopify product for an authorized workspace actor'
 );
 
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
+set local role authenticated;
+
 select extensions.is(
   (select source::text from public.products where external_id = 'gid://shopify/Product/1'),
   'shopify'::text,
@@ -66,6 +70,9 @@ select extensions.is(
   'Shopify currency is normalized'
 );
 
+reset role;
+set local role service_role;
+
 select extensions.lives_ok(
   $$select public.upsert_shopify_product_server(
       '91000000-0000-4000-8000-000000000001',
@@ -77,11 +84,18 @@ select extensions.lives_ok(
   'repeat provider sync updates the same external product'
 );
 
+reset role;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
+set local role authenticated;
+
 select extensions.is(
   (select count(*) from public.products where external_id = 'gid://shopify/Product/1'),
   1::bigint,
   'repeat provider sync does not duplicate Shopify products'
 );
+
+reset role;
+set local role service_role;
 
 select extensions.throws_ok(
   $$select public.upsert_shopify_product_server(
