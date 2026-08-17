@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { renderCampaignRelease, stableStringify } from "@pagevelope/email-renderer";
 import { assignTemplateToCampaignMessage } from "@/lib/klaviyo/client";
-import { KLAVIYO_API_REVISION } from "@/lib/klaviyo/config";
+import { KLAVIYO_API_REVISION, requireKlaviyoServerConfig } from "@/lib/klaviyo/config";
 import { getWorkspaceKlaviyoAccess } from "@/lib/klaviyo/credentials";
 import { upsertCodeTemplate } from "@/lib/klaviyo/templates";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -131,7 +132,8 @@ export async function POST(request: Request, context: RouteContext) {
     }, { status: 502 });
   }
 
-  const { data: receiptId, error: receiptError } = await supabase.rpc("record_klaviyo_publish_receipt", {
+  const admin = createAdminClient(requireKlaviyoServerConfig().supabaseServiceRoleKey);
+  const { data: receiptId, error: receiptError } = await admin.rpc("record_klaviyo_publish_receipt_server", {
     target_workspace_id: workspaceId,
     target_release_candidate_id: candidateId,
     target_connection_id: access.connectionId,
@@ -139,6 +141,7 @@ export async function POST(request: Request, context: RouteContext) {
     external_template_id: template.templateId,
     external_campaign_id: assignment?.campaignId ?? "",
     external_message_id: assignment?.messageId ?? "",
+    actor_user_id: userId,
   });
 
   if (receiptError) {
