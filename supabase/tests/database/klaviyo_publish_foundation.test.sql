@@ -79,7 +79,6 @@ select extensions.throws_ok(
 
 reset role;
 set local role service_role;
-
 select extensions.lives_ok(
   $$select public.record_klaviyo_publish_receipt_server(
       '81000000-0000-4000-8000-000000000001',
@@ -90,25 +89,25 @@ select extensions.lives_ok(
     )$$,
   'service role can record provider-confirmed Klaviyo completion for an authorized actor'
 );
+reset role;
 
 select extensions.is(
   (select count(*) from public.campaign_publish_receipts where release_candidate_id = '81200000-0000-4000-8000-000000000001'),
   1::bigint,
   'one immutable publish receipt is stored'
 );
-
 select extensions.is(
   (select status::text from public.campaigns where id = '81100000-0000-4000-8000-000000000001'),
   'published'::text,
   'successful receipt advances campaign to published'
 );
-
 select extensions.is(
   (select count(*) from public.audit_events where action = 'campaign.published.klaviyo'),
   1::bigint,
   'Klaviyo publish is audited'
 );
 
+set local role service_role;
 select extensions.throws_ok(
   $$select public.record_klaviyo_publish_receipt_server(
       '81000000-0000-4000-8000-000000000001',
@@ -120,7 +119,6 @@ select extensions.throws_ok(
   '40001', null,
   'already-published campaign cannot be published again through the server receipt RPC'
 );
-
 select extensions.throws_ok(
   $$select public.record_klaviyo_publish_receipt_server(
       '82000000-0000-4000-8000-000000000001',
@@ -136,7 +134,6 @@ select extensions.throws_ok(
 reset role;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000002"}', true);
 set local role authenticated;
-
 select extensions.is(
   (select count(*) from public.campaign_publish_receipts where release_candidate_id = '81200000-0000-4000-8000-000000000001'),
   0::bigint,
