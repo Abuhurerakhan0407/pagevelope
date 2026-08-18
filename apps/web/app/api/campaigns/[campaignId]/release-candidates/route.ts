@@ -1,3 +1,4 @@
+import { trackServerEvent } from "@/lib/analytics/server";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { renderCampaignRelease, stableStringify } from "@pagevelope/email-renderer";
@@ -133,6 +134,8 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Release candidate could not be created." }, { status: 422 });
   }
 
+  await trackServerEvent("release_created", { workspaceId, userId: claimsData.claims.sub, properties: { campaignId, version: version.version_number } });
+  await trackServerEvent("release_created", { workspaceId, userId: claimsData.claims.sub, properties: { campaignId, version: version.version_number } });
   return NextResponse.json(
     {
       candidateId,

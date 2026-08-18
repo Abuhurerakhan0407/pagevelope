@@ -1,4 +1,5 @@
 "use server";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -74,6 +75,8 @@ export async function createBrand(workspaceId: string, formData: FormData) {
     redirect(`/workspaces/${workspaceId}/brands/new?error=brand-create-failed`);
   }
 
+  await trackServerEvent("brand_created", { workspaceId, properties: { brandId: data } });
+  await trackServerEvent("brand_created", { workspaceId, properties: { brandId: data } });
   revalidatePath("/dashboard");
   redirect(`/workspaces/${workspaceId}/brands/${String(data)}?created=1`);
 }
