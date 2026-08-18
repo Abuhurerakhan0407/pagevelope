@@ -36,7 +36,7 @@ export default function FeaturesPage() {
         <article className="statusCard">
           <span>Quality Assurance</span>
           <strong>Inbox Lab</strong>
-          <p>See exactly how your campaign renders across 90+ major email clients and devices before you send. No more broken layouts.</p>
+          <p>See exactly how your campaign renders across major email clients and devices before you send. No more broken layouts.</p>
         </article>
 
         <article className="statusCard">
@@ -50,7 +50,7 @@ export default function FeaturesPage() {
          <div>
           <h2>Ready to upgrade your workflow?</h2>
           <div className="actions" style={{ marginTop: '24px' }}>
-            <Link className="primaryButton" href="/signup">Start Free Trial</Link>
+            <Link className="primaryButton" href="/auth/sign-up">Start Free Trial</Link>
           </div>
         </div>
       </section>

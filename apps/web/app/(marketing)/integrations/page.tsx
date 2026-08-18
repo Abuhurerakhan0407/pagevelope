@@ -44,7 +44,7 @@ export default function IntegrationsPage() {
          <div>
           <h2>Ready to streamline your workflow?</h2>
           <div className="actions" style={{ marginTop: '24px' }}>
-            <Link className="primaryButton" href="/signup">Connect Your Account</Link>
+            <Link className="primaryButton" href="/auth/sign-up">Connect Your Account</Link>
           </div>
         </div>
       </section>

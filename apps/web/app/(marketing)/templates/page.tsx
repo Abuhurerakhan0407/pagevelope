@@ -44,7 +44,7 @@ export default function TemplatesPage() {
         <div style={{ textAlign: 'center' }}>
           <h2>Customize these in the Visual Builder</h2>
           <div className="actions" style={{ justifyContent: 'center', marginTop: '24px' }}>
-            <Link className="primaryButton" href="/signup">Try Templates Free</Link>
+            <Link className="primaryButton" href="/auth/sign-up">Try Templates Free</Link>
           </div>
         </div>
       </section>
