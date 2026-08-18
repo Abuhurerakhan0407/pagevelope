@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import "../globals.css";
 import Link from "next/link";
 
@@ -56,10 +55,18 @@ export default function MarketingLayout({ children }: Readonly<{ children: React
               <Link href="/contact">Contact Sales</Link>
               <Link href="/faq">FAQ</Link>
             </div>
+            <div className="footerCol">
+              <strong>Legal & Trust</strong>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/refund">Refund & Cancellation</Link>
+              <Link href="/acceptable-use">Acceptable Use</Link>
+              <Link href="/security">Security & Data</Link>
+            </div>
           </div>
         </div>
         <div className="footerBottom">
-          <p>&copy; {new Date().getFullYear()} Pagevelope. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} [COMPANY NAME]. All rights reserved.</p>
         </div>
       </footer>
     </>
