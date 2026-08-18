@@ -18,7 +18,7 @@ export default function Home() {
           and traceable publishing direct to Klaviyo. Designed for email designers, agencies, and elite ecommerce teams.
         </p>
         <div className="actions">
-          <Link className="primaryButton" href="/signup">Start designing for free</Link>
+          <Link className="primaryButton" href="/auth/sign-up">Start designing for free</Link>
           <Link className="secondaryButton" href="/features">Explore features</Link>
         </div>
       </section>
