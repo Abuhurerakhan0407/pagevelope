@@ -44,6 +44,13 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
             Password
             <input className={styles.input} type="password" name="password" autoComplete="new-password" minLength={8} required />
           </label>
+          <p className={styles.consentText} style={{ fontSize: "0.8rem", color: "var(--color-gray-500)", marginTop: "1rem", lineHeight: 1.5 }}>
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" style={{ color: "var(--color-brand)" }}>Terms of Service</Link>{" "}
+            and{" "}
+            <Link href="/privacy" style={{ color: "var(--color-brand)" }}>Privacy Policy</Link>.
+          </p>
+
           <button className={styles.button} type="submit" disabled={!configured}>Create account</button>
         </form>
 
