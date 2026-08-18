@@ -1,4 +1,5 @@
 "use server";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -34,7 +35,7 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 export async function signUp(formData: FormData) {
@@ -53,7 +54,8 @@ export async function signUp(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (data.session) {
-    redirect("/dashboard");
+    await trackServerEvent("signup", { userId: data.user?.id });
+    redirect("/onboarding");
   }
 
   redirect("/auth/sign-in?notice=check-email");

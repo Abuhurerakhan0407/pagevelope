@@ -3,8 +3,8 @@
   background:
     radial-gradient(circle at 12% 10%, rgba(167, 139, 250, 0.12), transparent 28%),
     radial-gradient(circle at 88% 14%, rgba(111, 92, 251, 0.08), transparent 28%),
-    #f7f8fc;
-  color: #0f1221;
+    var(--pv-bg);
+  color: var(--pv-ink);
 }
 
 .topbar {
@@ -26,7 +26,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #0f1221;
+  color: var(--pv-ink);
   text-decoration: none;
   font-weight: 850;
   letter-spacing: -0.035em;
@@ -37,10 +37,10 @@
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
-  background: #6f5cfb;
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(111, 92, 251, 0.22);
+  border-radius: 12px;
+  background: var(--pv-primary);
+  color: var(--pv-surface);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
 }
 
 .crumbs {
@@ -52,7 +52,7 @@
 }
 
 .crumbs a {
-  color: #6b7280;
+  color: var(--pv-muted);
   text-decoration: none;
 }
 
@@ -94,17 +94,17 @@
   place-items: center;
   border: 1px solid rgba(15, 18, 33, 0.11);
   border-radius: 999px;
-  background: #fff;
+  background: var(--pv-surface);
   color: #a0a4b2;
   font-style: normal;
-  box-shadow: 0 6px 16px rgba(15, 18, 33, 0.035);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
 }
 
 .progressItem .done,
 .progressItem .active {
   border-color: rgba(111, 92, 251, 0.22);
-  background: #6f5cfb;
-  color: #fff;
+  background: var(--pv-primary);
+  color: var(--pv-surface);
 }
 
 .progressLine {
@@ -131,7 +131,7 @@
 
 .eyebrow {
   margin: 0 0 12px;
-  color: #6f5cfb;
+  color: var(--pv-primary);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.13em;
@@ -141,7 +141,7 @@
 .lead {
   max-width: 710px;
   margin: 17px 0 0;
-  color: #6b7280;
+  color: var(--pv-muted);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -151,12 +151,12 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 10px 13px;
+  padding: 10px 16px;
   border: 1px solid rgba(15, 18, 33, 0.08);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
   color: #404355;
-  box-shadow: 0 12px 30px rgba(15, 18, 33, 0.05);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
   font-size: 11px;
   font-weight: 760;
 }
@@ -171,8 +171,8 @@
 .success {
   max-width: 820px;
   margin: -8px 0 26px;
-  padding: 13px 15px;
-  border-radius: 14px;
+  padding: 10px 16px;
+  border-radius: 12px;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -229,9 +229,9 @@
   height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: #ede9fe;
-  color: #6f5cfb;
+  border-radius: 12px;
+  background: var(--pv-primary-soft);
+  color: var(--pv-primary);
   font-size: 10px;
   font-weight: 900;
 }
@@ -285,7 +285,7 @@
 .productCard:hover {
   transform: translateY(-2px);
   border-color: rgba(111, 92, 251, 0.23);
-  box-shadow: 0 12px 26px rgba(15, 18, 33, 0.055);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
 }
 
 .productCard input {
@@ -310,16 +310,16 @@
   place-items: center;
   border: 1px solid rgba(15, 18, 33, 0.1);
   border-radius: 999px;
-  background: #fff;
+  background: var(--pv-surface);
   color: transparent;
   font-size: 10px;
   font-weight: 900;
 }
 
 .productCard:has(input:checked) .checkmark {
-  border-color: #6f5cfb;
-  background: #6f5cfb;
-  color: #fff;
+  border-color: var(--pv-primary);
+  background: var(--pv-primary);
+  color: var(--pv-surface);
 }
 
 .productImage {
@@ -329,7 +329,7 @@
   place-items: center;
   border-radius: 12px;
   background: linear-gradient(145deg, #eeeaff, #f8f7ff);
-  color: #6f5cfb;
+  color: var(--pv-primary);
   font-size: 28px;
   font-weight: 900;
 }
@@ -399,10 +399,10 @@
 .catalogFooter button,
 .productForm > button {
   border: 0;
-  border-radius: 13px;
-  background: #6f5cfb;
-  color: #fff;
-  box-shadow: 0 13px 28px rgba(111, 92, 251, 0.2);
+  border-radius: 12px;
+  background: var(--pv-primary);
+  color: var(--pv-surface);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
   font: inherit;
   font-size: 11px;
   font-weight: 820;
@@ -410,8 +410,8 @@
 }
 
 .catalogFooter button {
-  min-height: 45px;
-  padding: 0 17px;
+  min-height: 44px;
+  padding: 10px 16px;
   white-space: nowrap;
 }
 
@@ -429,8 +429,8 @@
 .emptyState > span {
   padding: 6px 9px;
   border-radius: 999px;
-  background: #ede9fe;
-  color: #6f5cfb;
+  background: var(--pv-primary-soft);
+  color: var(--pv-primary);
   font-size: 9px;
   font-weight: 850;
 }
@@ -459,7 +459,7 @@
 
 .sideKicker {
   margin: 0;
-  color: #6f5cfb;
+  color: var(--pv-primary);
   font-size: 9px;
   font-weight: 860;
   letter-spacing: 0.12em;
@@ -503,12 +503,12 @@
 
 .productForm input {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid rgba(15, 18, 33, 0.1);
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 0 11px;
   background: rgba(255, 255, 255, 0.9);
-  color: #0f1221;
+  color: var(--pv-ink);
   font: inherit;
   font-size: 11px;
   outline: none;
@@ -526,7 +526,7 @@
 }
 
 .productForm > button {
-  min-height: 43px;
+  min-height: 44px;
   margin-top: 3px;
 }
 
@@ -534,7 +534,7 @@
   margin-top: 20px;
   padding: 14px;
   border: 1px solid rgba(15, 18, 33, 0.07);
-  border-radius: 13px;
+  border-radius: 12px;
   background: rgba(247, 248, 252, 0.78);
 }
 

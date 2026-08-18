@@ -28,9 +28,6 @@ export default function ContactPage() {
            <div style={{ marginTop: '24px' }}>
              <h3 style={{ fontSize: '18px', margin: '0 0 8px 0' }}>Support</h3>
              <p style={{ color: 'var(--pv-muted)', margin: '0 0 24px 0', lineHeight: '1.6' }}>Current customers can reach our technical support team directly through the dashboard widget.</p>
-
-             <h3 style={{ fontSize: '18px', margin: '0 0 8px 0' }}>Office</h3>
-             <p style={{ color: 'var(--pv-muted)', margin: '0', lineHeight: '1.6' }}>Pagevelope Inc.<br />100 Digital Way<br />San Francisco, CA 94105</p>
            </div>
         </div>
       </section>

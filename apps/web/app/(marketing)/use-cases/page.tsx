@@ -54,7 +54,7 @@ export default function UseCasesPage() {
         <div style={{ textAlign: 'center' }}>
           <h2>Join the leading teams</h2>
           <div className="actions" style={{ justifyContent: 'center', marginTop: '24px' }}>
-            <Link className="primaryButton" href="/signup">Get Started Today</Link>
+            <Link className="primaryButton" href="/auth/sign-up">Get Started Today</Link>
           </div>
         </div>
       </section>
