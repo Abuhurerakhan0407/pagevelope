@@ -1,0 +1,20 @@
+--- apps/web/app/auth/actions.ts
++++ apps/web/app/auth/actions.ts
+@@ -34,7 +34,7 @@
+   }
+
+   revalidatePath("/", "layout");
+-  redirect("/dashboard");
++  redirect("/onboarding");
+ }
+
+ export async function signUp(formData: FormData) {
+@@ -52,7 +52,7 @@
+   revalidatePath("/", "layout");
+
+   if (data.session) {
+-    redirect("/dashboard");
++    redirect("/onboarding");
+   }
+
+   redirect("/auth/sign-in?notice=check-email");

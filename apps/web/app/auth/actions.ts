@@ -34,7 +34,7 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 export async function signUp(formData: FormData) {
@@ -53,7 +53,7 @@ export async function signUp(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (data.session) {
-    redirect("/dashboard");
+    redirect("/onboarding");
   }
 
   redirect("/auth/sign-in?notice=check-email");
