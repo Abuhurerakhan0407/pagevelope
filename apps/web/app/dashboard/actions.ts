@@ -1,4 +1,5 @@
 "use server";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -42,6 +43,8 @@ export async function createWorkspace(formData: FormData) {
     redirect("/dashboard?error=workspace-create-failed");
   }
 
+  await trackServerEvent("workspace_created", { properties: { slug } });
+  await trackServerEvent("workspace_created", { properties: { slug } });
   revalidatePath("/dashboard");
   redirect("/dashboard?created=1");
 }

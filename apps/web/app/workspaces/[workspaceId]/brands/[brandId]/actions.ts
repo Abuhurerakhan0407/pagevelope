@@ -1,4 +1,5 @@
 "use server";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -31,8 +32,7 @@ export async function createCampaignDraft(workspaceId: string, brandId: string, 
     redirect(`/workspaces/${workspaceId}/brands/${brandId}?error=campaign-create-failed`);
   }
 
+  await trackServerEvent("campaign_created", { workspaceId, properties: { campaignId: data, brandId } });
   revalidatePath(`/workspaces/${workspaceId}/brands/${brandId}`);
-  redirect(
-    `/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(String(data))}/products`,
-  );
+  redirect(`/workspaces/${encodeURIComponent(workspaceId)}/brands/${encodeURIComponent(brandId)}/campaigns/${encodeURIComponent(String(data))}/products`);
 }
