@@ -26,6 +26,18 @@ test("empty product grid shows an explicit empty state, not phantom cards", () =
   assert.match(source, /Add products to this grid/);
 });
 
+test("new product grids derive their summary from the actual products, not a hardcoded list", () => {
+  assert.match(source, /block\.body = block\.products\.map/);
+  assert.match(source, /product\.title\}\$\{product\.price \?/);
+  assert.match(source, /\.join\("\\n"\)/);
+  assert.doesNotMatch(source, /Product one · ₹1,999/);
+  assert.doesNotMatch(source, /"Product one · ₹1,999\\nProduct two · ₹2,499"/);
+});
+
+test("product grid blocks do not expose a body textarea whose edits would be silently dropped", () => {
+  assert.match(source, /selected\.kind !== "image" && selected\.kind !== "products" && selected\.body !== undefined/);
+});
+
 test("hero preview renders the edited imageSrc immediately", () => {
   assert.match(source, /block\.imageSrc\?\.trim\(\) \? \(/);
   assert.match(source, /<img className=\{styles\.heroImage\} src=\{block\.imageSrc\}/);

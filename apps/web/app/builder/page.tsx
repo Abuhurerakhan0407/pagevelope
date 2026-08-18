@@ -136,7 +136,7 @@ function makeBlock(kind: BlockKind, label: string): CanvasBlock {
     text: { title: "Section heading", body: "Add useful campaign copy here." },
     image: { title: "Campaign image", body: "Alt text: describe the image meaningfully." },
     button: { title: "Primary action", cta: "Learn more" },
-    products: { title: "Featured products", body: "Product one · ₹1,999\nProduct two · ₹2,499" },
+    products: { title: "Featured products" },
     divider: { title: "Divider" },
     spacer: { title: "24px spacer" },
     social: { title: "Follow us", body: "Instagram" },
@@ -154,6 +154,7 @@ function makeBlock(kind: BlockKind, label: string): CanvasBlock {
       { id: `${block.id}-one`, title: "Featured product one", price: "₹2,499", imageSrc: "https://images.example.com/product-one.jpg", imageAlt: "Featured product one" },
       { id: `${block.id}-two`, title: "Featured product two", price: "₹2,499", imageSrc: "https://images.example.com/product-two.jpg", imageAlt: "Featured product two" },
     ];
+    block.body = block.products.map((product) => `${product.title}${product.price ? ` · ${product.price}` : ""}`).join("\n");
   }
   return block;
 }
@@ -557,7 +558,7 @@ export default function BuilderPage() {
                 <input value={selected.title} onChange={(event) => updateSelected({ title: event.target.value })} />
               </label>
 
-              {selected.kind !== "image" && selected.body !== undefined ? (
+              {selected.kind !== "image" && selected.kind !== "products" && selected.body !== undefined ? (
                 <label>
                   <span>Body</span>
                   <textarea rows={5} value={selected.body} onChange={(event) => updateSelected({ body: event.target.value })} />

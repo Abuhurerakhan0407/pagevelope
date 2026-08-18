@@ -19,6 +19,7 @@
     "core:typecheck": "tsc -p tsconfig.core.json --noEmit",
     "core:build": "node -e \"fs.rmSync('.build/core',{recursive:true,force:true})\" && tsc -p tsconfig.core.json",
     "core:test": "npm run core:build && node --test tests/core/*.test.mjs",
+    "e2e": "playwright test",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "sharp": "$sharp"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
