@@ -93,3 +93,35 @@ button:disabled {
   .statusGrid { gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Additional Styles for New Pages */
+.desktopNav { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
+.desktopNav a:hover { color: var(--pv-primary); }
+.navActions { display: flex; gap: 16px; align-items: center; }
+.textLink { font-size: 14px; font-weight: 600; }
+.textLink:hover { color: var(--pv-primary); }
+
+.footer { margin-top: 120px; border-top: 1px solid var(--pv-line); padding: 80px 32px 40px; background: var(--pv-surface); }
+.footerContent { max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; gap: 64px; flex-wrap: wrap; }
+.footerBrand p { color: var(--pv-muted); margin-top: 16px; font-size: 14px; max-width: 250px; }
+.footerLinks { display: flex; gap: 64px; flex-wrap: wrap; }
+.footerCol { display: flex; flex-direction: column; gap: 12px; }
+.footerCol strong { font-size: 14px; color: var(--pv-ink); margin-bottom: 8px; }
+.footerCol a { color: var(--pv-muted); font-size: 14px; }
+.footerCol a:hover { color: var(--pv-primary); }
+.footerBottom { max-width: 1180px; margin: 64px auto 0; padding-top: 32px; border-top: 1px solid var(--pv-line); color: var(--pv-muted); font-size: 13px; text-align: center; }
+
+.pricingCard { display: flex; flex-direction: column; }
+.pricingHeader { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--pv-line); }
+.pricingHeader h3 { margin: 0 0 8px; font-size: 20px; }
+.pricingPrice { font-size: 42px; font-weight: 800; letter-spacing: -0.04em; }
+.pricingPrice span { font-size: 16px; font-weight: 500; color: var(--pv-muted); }
+.pricingFeatures { margin: 24px 0 0; padding: 0; list-style: none; flex-grow: 1; }
+.pricingFeatures li { margin-bottom: 12px; font-size: 14px; color: var(--pv-muted); display: flex; align-items: center; gap: 8px; }
+.pricingFeatures li::before { content: "✓"; color: var(--pv-primary); font-weight: bold; }
+
+@media (max-width: 800px) {
+  .desktopNav { display: none; }
+  .footerContent { flex-direction: column; gap: 48px; }
+  .footerLinks { gap: 48px; }
+}
