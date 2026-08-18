@@ -28,16 +28,16 @@
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--pv-primary);
-  color: #fff;
+  color: var(--pv-surface);
 }
 
 .signOut {
   border: 1px solid rgba(15, 18, 33, 0.1);
   border-radius: 12px;
   padding: 9px 13px;
-  background: #fff;
+  background: var(--pv-surface);
   color: var(--pv-ink);
   font: inherit;
   font-size: 13px;
@@ -97,9 +97,9 @@
   padding: 9px 12px;
   border: 1px solid rgba(111, 92, 251, 0.14);
   border-radius: 999px;
-  background: #fff;
+  background: var(--pv-surface);
   color: var(--pv-primary);
-  box-shadow: 0 8px 24px rgba(111, 92, 251, 0.08);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
   font-size: 11px;
   font-weight: 800;
 }
@@ -107,9 +107,9 @@
 .message {
   max-width: 760px;
   margin: -14px 0 28px;
-  padding: 12px 14px;
+  padding: 10px 16px;
   border: 1px solid rgba(31, 122, 76, 0.16);
-  border-radius: 13px;
+  border-radius: 12px;
   background: rgba(236, 253, 245, 0.8);
   color: #17603d;
   font-size: 13px;
@@ -239,7 +239,7 @@
 .slugInput {
   min-height: 44px;
   border-radius: 12px;
-  padding: 0 13px;
+  padding: 10px 16px;
   color: var(--pv-ink);
   font: inherit;
   font-size: 13px;
@@ -267,24 +267,25 @@
 .hint { margin: -7px 0 0; color: #8b90a2; font-size: 11px; line-height: 1.45; }
 
 .primaryButton {
-  min-height: 46px;
+  min-height: 44px;
   border: 0;
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--pv-primary);
-  color: #fff;
-  box-shadow: 0 12px 28px rgba(111, 92, 251, 0.22);
+  color: var(--pv-surface);
+  box-shadow: 0 12px 30px rgba(111, 92, 251, 0.15);
   font: inherit;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
+.primaryButton:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(111, 92, 251, 0.28); }
 
 .setupCode {
   display: grid;
   gap: 8px;
   margin-top: 20px;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #f3f1ff;
   color: #3f36a6;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root {
   --pv-bg: #f7f8fc;
   --pv-surface: #ffffff;
@@ -49,7 +50,9 @@ main { min-height: 100vh; }
 .heroCopy { max-width: 660px; margin: 24px 0 0; color: var(--pv-muted); font-size: 19px; line-height: 1.55; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
 .primaryButton, .secondaryButton { min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 13px; font-weight: 760; }
+.secondaryButton:hover { border-color: rgba(15, 18, 33, 0.2); background: #f9f9fb; }
 .primaryButton { background: var(--pv-primary); color: white; box-shadow: 0 12px 30px rgba(111,92,251,.22); }
+.primaryButton:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(111, 92, 251, 0.28); }
 .secondaryButton { border: 1px solid var(--pv-line); background: var(--pv-surface); }
 .statusGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .statusCard, .rules { border: 1px solid var(--pv-line); border-radius: 22px; background: var(--pv-surface); box-shadow: var(--pv-shadow); }
@@ -94,6 +97,7 @@ button:disabled {
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
+<<<<<<< HEAD
 /* Additional Styles for New Pages */
 .desktopNav { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
 .desktopNav a:hover { color: var(--pv-primary); }
@@ -124,4 +128,13 @@ button:disabled {
   .desktopNav { display: none; }
   .footerContent { flex-direction: column; gap: 48px; }
   .footerLinks { gap: 48px; }
+}
+button, a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input, select, textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
 }
