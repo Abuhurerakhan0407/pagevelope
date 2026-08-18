@@ -1,6 +1,7 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { BillingClient } from './billing-client';
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getRazorpayServerConfig } from "@/lib/razorpay/env";
+import { BillingClient } from "./billing-client";
 
 export default async function BillingPage({
   params
@@ -12,24 +13,24 @@ export default async function BillingPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth/sign-in');
+    redirect("/auth/sign-in");
   }
 
   const { data: membership } = await supabase
-    .from('workspace_memberships')
-    .select('role')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', user.id)
+    .from("workspace_memberships")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", user.id)
     .single();
 
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
+  if (!membership || !["owner", "admin"].includes(membership.role)) {
     redirect(`/workspaces/${workspaceId}`);
   }
 
   const { data: subscription } = await supabase
-    .from('workspace_subscriptions')
-    .select('*')
-    .eq('workspace_id', workspaceId)
+    .from("workspace_subscriptions")
+    .select("*")
+    .eq("workspace_id", workspaceId)
     .single();
 
   return (
@@ -38,6 +39,7 @@ export default async function BillingPage({
       <BillingClient
         workspaceId={workspaceId}
         subscription={subscription}
+        billingConfigured={Boolean(getRazorpayServerConfig())}
       />
     </div>
   );

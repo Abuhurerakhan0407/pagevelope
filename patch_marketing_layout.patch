@@ -1,6 +1,0 @@
---- apps/web/app/(marketing)/layout.tsx
-+++ apps/web/app/(marketing)/layout.tsx
-@@ -1,4 +1,3 @@
--import type { Metadata } from "next";
- import "../globals.css";
- import Link from "next/link";

@@ -1,6 +1,6 @@
 begin;
 
-create type public.subscription_tier as enum ('free', 'pro', 'enterprise');
+create type public.subscription_tier as enum ('free', 'starter', 'pro', 'agency');
 create type public.subscription_status as enum ('active', 'past_due', 'canceled', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing', 'paused');
 
 create table public.workspace_subscriptions (
