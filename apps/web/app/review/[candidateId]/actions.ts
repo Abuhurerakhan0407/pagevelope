@@ -1,4 +1,5 @@
 "use server";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -218,6 +219,7 @@ export async function sendTestEmailAction(
       "",
       failureCode,
     );
+    await trackServerEvent("test_send_failed", { workspaceId, properties: { candidateId, error: completionError?.message || "unknown" } });
     redirect(`${path}&error=${completionError ? "test-send-record-failed" : "test-send-provider"}`);
   }
 
@@ -232,6 +234,8 @@ export async function sendTestEmailAction(
   if (completionError) redirect(`${path}&error=test-send-record-failed`);
 
   revalidatePath(`/review/${candidateId}`);
+  await trackServerEvent("test_send_success", { workspaceId, properties: { candidateId } });
+  await trackServerEvent("test_send_success", { workspaceId, properties: { candidateId } });
   redirect(`${path}&saved=test-send`);
 }
 

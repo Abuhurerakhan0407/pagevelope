@@ -1,3 +1,4 @@
+import { trackServerEvent } from "@/lib/analytics/server";
 import { NextResponse } from "next/server";
 import { renderCampaignRelease } from "@pagevelope/email-renderer";
 
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
 
   try {
     const release = await renderCampaignRelease(input);
+    await trackServerEvent("render_success", { properties: { source: "api" } });
+    await trackServerEvent("render_success", { properties: { source: "api" } });
 
     return NextResponse.json(
       {
@@ -31,6 +34,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Campaign render failed.";
+    await trackServerEvent("render_failed", { properties: { error: message, source: "api" } });
     return NextResponse.json({ error: message }, { status: 422 });
   }
 }
