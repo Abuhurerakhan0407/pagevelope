@@ -34,7 +34,7 @@ export default function PricingPage() {
             <li>Direct Klaviyo publish</li>
             <li>1 Workspace</li>
           </ul>
-          <Link className="secondaryButton" href="/signup" style={{ width: '100%', marginTop: '24px' }}>Get Started</Link>
+          <Link className="secondaryButton" href="/auth/sign-up" style={{ width: '100%', marginTop: '24px' }}>Get Started</Link>
         </article>
 
         <article className="pricingCard statusCard" style={{ borderColor: 'var(--pv-primary)', boxShadow: '0 12px 30px rgba(111,92,251,.15)' }}>
@@ -51,7 +51,7 @@ export default function PricingPage() {
             <li>Shopify product integration</li>
             <li>3 Workspaces</li>
           </ul>
-          <Link className="primaryButton" href="/signup" style={{ width: '100%', marginTop: '24px' }}>Start Pro Trial</Link>
+          <Link className="primaryButton" href="/auth/sign-up" style={{ width: '100%', marginTop: '24px' }}>Start Pro Trial</Link>
         </article>
 
         <article className="pricingCard statusCard">

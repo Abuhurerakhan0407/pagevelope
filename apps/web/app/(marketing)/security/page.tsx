@@ -1,27 +1,32 @@
-export const metadata = {
-  title: "Security & Data Handling | Pagevelope",
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Security',
+  description: 'Security overview and practices at Pagevelope.',
+  alternates: {
+    canonical: "/security",
+  }
 };
 
 export default function SecurityPage() {
   return (
-    <main className="container" style={{ padding: "4rem 2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Security & Data Handling</h1>
-      <p>Last updated: [DATE]</p>
-      <section>
-        <h2>1. Data Protection</h2>
-        <p>We implement industry-standard security measures to protect your data from unauthorized access, disclosure, or destruction.</p>
+    <main>
+      <section className="hero">
+        <p className="eyebrow">Trust</p>
+        <h1>Security Overview</h1>
+        <p className="heroCopy">
+          How we keep your data safe and secure.
+        </p>
       </section>
-      <section>
-        <h2>2. Data Storage</h2>
-        <p>Your data is stored securely using trusted cloud infrastructure providers.</p>
-      </section>
-      <section>
-        <h2>3. Access Control</h2>
-        <p>Access to user data is strictly limited to authorized personnel who require access to perform their duties.</p>
-      </section>
-      <section>
-        <h2>4. Contact Us</h2>
-        <p>For security concerns or vulnerability reports, please contact us at [CONTACT EMAIL].</p>
+
+      <section className="rules">
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h2>Pagevelope Security Practices</h2>
+          <p style={{ marginTop: '16px' }}>Last Updated: January 1, 2024</p>
+          <p style={{ marginTop: '16px' }}>
+            We take security seriously. All data is encrypted in transit and at rest. We regularly audit our infrastructure and adhere to industry standard security protocols to protect your campaigns and workspace data.
+          </p>
+        </div>
       </section>
     </main>
   );
