@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select extensions.plan(11);
+select extensions.plan(12);
 
 select extensions.ok(
   not has_table_privilege('authenticated', 'public.razorpay_webhook_events', 'SELECT'),
