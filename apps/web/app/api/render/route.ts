@@ -17,7 +17,6 @@ export async function POST(request: Request) {
   try {
     const release = await renderCampaignRelease(input);
     await trackServerEvent("render_success", { properties: { source: "api" } });
-    await trackServerEvent("render_success", { properties: { source: "api" } });
 
     return NextResponse.json(
       {

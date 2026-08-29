@@ -22,9 +22,13 @@ export default function SecurityPage() {
       <section className="rules">
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <h2>Pagevelope Security Practices</h2>
-          <p style={{ marginTop: '16px' }}>Last Updated: January 1, 2024</p>
+          <p style={{ marginTop: '16px' }}><strong>Current code posture — production verification incomplete.</strong></p>
+          <p style={{ marginTop: '16px' }}>Reviewed: August 29, 2026</p>
           <p style={{ marginTop: '16px' }}>
-            We take security seriously. All data is encrypted in transit and at rest. We regularly audit our infrastructure and adhere to industry standard security protocols to protect your campaigns and workspace data.
+            Current code uses tenant-scoped row-level security, server-only provider credentials, application-layer encryption for Shopify and Klaviyo tokens, immutable release evidence, and restricted provider-write paths. Historical disposable-database tests passed these controls.
+          </p>
+          <p style={{ marginTop: '16px' }}>
+            Production database health and migration parity are not currently verified. Pagevelope does not claim an external certification, independent security audit, or continuously monitored production control until evidence exists.
           </p>
         </div>
       </section>

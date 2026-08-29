@@ -35,6 +35,10 @@ values
 create temporary table product_test_state (product_id uuid not null);
 grant select, insert on product_test_state to authenticated;
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"70000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 

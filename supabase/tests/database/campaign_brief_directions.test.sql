@@ -64,6 +64,10 @@ set product_selection_completed_at = now(),
     updated_by = '60000000-0000-4000-8000-000000000001'
 where id = '61200000-0000-4000-8000-000000000001';
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"60000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 

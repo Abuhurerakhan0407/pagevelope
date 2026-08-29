@@ -22,9 +22,10 @@ export default function RefundPage() {
       <section className="rules">
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <h2>Pagevelope Refund Policy</h2>
-          <p style={{ marginTop: '16px' }}>Last Updated: January 1, 2024</p>
+          <p style={{ marginTop: '16px' }}><strong>Draft — refund terms require owner approval.</strong></p>
+          <p style={{ marginTop: '16px' }}>Reviewed: August 29, 2026</p>
           <p style={{ marginTop: '16px' }}>
-            Subscriptions may be cancelled at any time. We offer a standard 14-day refund window for new subscriptions if you are not satisfied with the Pagevelope service.
+            No universal refund window has been approved. Private-pilot fees, refunds, and cancellation rights must be stated in the customer&apos;s written pilot terms before payment. The application is designed to request subscription cancellation at the end of the current paid billing period.
           </p>
         </div>
       </section>

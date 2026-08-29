@@ -22,9 +22,10 @@ export default function AcceptableUsePage() {
       <section className="rules">
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <h2>Pagevelope Acceptable Use Policy</h2>
-          <p style={{ marginTop: '16px' }}>Last Updated: January 1, 2024</p>
+          <p style={{ marginTop: '16px' }}><strong>Draft — not approved for paid launch.</strong></p>
+          <p style={{ marginTop: '16px' }}>Reviewed: August 29, 2026</p>
           <p style={{ marginTop: '16px' }}>
-            You may not use Pagevelope to send spam, malicious content, or content that violates the rights of others. We reserve the right to suspend accounts that violate these guidelines.
+            You may not use Pagevelope to create or publish unlawful, deceptive, malicious, infringing, or unsolicited campaign content. Pagevelope publishes template content to Klaviyo but does not send bulk campaigns. Customers must manage consent, suppression, recipients, and campaign delivery inside their email service provider.
           </p>
         </div>
       </section>

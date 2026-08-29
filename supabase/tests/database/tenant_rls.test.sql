@@ -46,6 +46,14 @@ values
   ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000005', 'viewer'),
   ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000006', 'owner');
 
+-- Content writes require a paid, active workspace after launch hardening.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days'
+where workspace_id in (
+  '10000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000001'
+);
+
 insert into public.brands (id, workspace_id, name, slug, created_by)
 values
   ('11000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Brand A', 'brand-a', '00000000-0000-4000-8000-000000000001'),

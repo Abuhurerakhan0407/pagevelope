@@ -4,14 +4,25 @@ import { useState } from "react";
 import Script from "next/script";
 import { getRazorpayPublicConfig } from "@/lib/razorpay/env";
 
-export function BillingClient({ workspaceId, subscription, billingConfigured }: { workspaceId: string; subscription: unknown; billingConfigured: boolean }) {
+export function BillingClient({
+  workspaceId,
+  subscription,
+  billingConfigured,
+  checkoutEnabled,
+}: {
+  workspaceId: string;
+  subscription: unknown;
+  billingConfigured: boolean;
+  checkoutEnabled: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Safe extraction from unknown subscription type
   const sub = subscription as { tier?: string; status?: string; cancel_at_period_end?: boolean } | null;
-  const isPro = sub?.tier === "pro" && sub?.status === "active";
+  const hasPaidPlanAccess = ["starter", "pro", "agency"].includes(sub?.tier ?? "")
+    && (sub?.status === "active" || (sub?.status === "canceled" && sub.cancel_at_period_end));
   const isCanceling = sub?.cancel_at_period_end;
 
   const handleUpgrade = async () => {
@@ -65,17 +76,22 @@ export function BillingClient({ workspaceId, subscription, billingConfigured }: 
     if (!confirm("Are you sure you want to cancel your subscription? You will have access until the end of the current billing period.")) return;
 
     setCancelLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/billing/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspaceId }),
       });
-      if (res.ok) {
-        window.location.reload();
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Cancellation is unavailable right now.");
+        return;
       }
+      window.location.reload();
     } catch (error) {
       console.error(error);
+      setError("Cancellation failed. Please try again.");
     } finally {
       setCancelLoading(false);
     }
@@ -83,7 +99,7 @@ export function BillingClient({ workspaceId, subscription, billingConfigured }: 
 
   return (
     <div>
-      {billingConfigured && <Script src="https://checkout.razorpay.com/v1/checkout.js" />}
+      {checkoutEnabled ? <Script src="https://checkout.razorpay.com/v1/checkout.js" /> : null}
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-xl font-semibold mb-4">Current Plan</h2>
         <div className="mb-6">
@@ -96,25 +112,25 @@ export function BillingClient({ workspaceId, subscription, billingConfigured }: 
           </p>
         </div>
 
-        {!billingConfigured ? (
+        {hasPaidPlanAccess ? (
+          <button
+            onClick={handleCancel}
+            disabled={cancelLoading || isCanceling || !billingConfigured}
+            className="bg-red-50 text-red-600 px-4 py-2 rounded border border-red-200 hover:bg-red-100 disabled:opacity-50"
+          >
+            {cancelLoading ? "Canceling..." : isCanceling ? "Canceled" : "Cancel Subscription"}
+          </button>
+        ) : !checkoutEnabled ? (
           <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 text-sm">
-            Checkout is not available yet: billing credentials are not configured. Please contact support to upgrade.
+            Checkout is not available yet. Please contact support for paid pilot activation.
           </p>
-        ) : !isPro ? (
+        ) : (
           <button
             onClick={handleUpgrade}
             disabled={loading}
             className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
           >
             {loading ? "Processing..." : "Upgrade to Pro"}
-          </button>
-        ) : (
-          <button
-            onClick={handleCancel}
-            disabled={cancelLoading || isCanceling}
-            className="bg-red-50 text-red-600 px-4 py-2 rounded border border-red-200 hover:bg-red-100 disabled:opacity-50"
-          >
-            {cancelLoading ? "Canceling..." : isCanceling ? "Canceled" : "Cancel Subscription"}
           </button>
         )}
 

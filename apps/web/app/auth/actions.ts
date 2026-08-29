@@ -54,7 +54,7 @@ export async function signUp(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (data.session) {
-    await trackServerEvent("signup", { userId: data.user?.id });
+    await trackServerEvent("signup");
     redirect("/onboarding");
   }
 

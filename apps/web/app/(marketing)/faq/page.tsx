@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const faqs = [
   {
     question: "Do I need to send my emails through Pagevelope?",
-    answer: "No. Pagevelope is a production and QA tool. You build, animate, and test your emails in Pagevelope, and then we publish them directly to your Klaviyo account (or standard ESP) to send to your lists."
+    answer: "No. Pagevelope is a production and review tool. You build and review campaign assets in Pagevelope, then publish an approved template to Klaviyo or download a proven HTML fallback. Recipient selection and sending stay in your email service provider."
   },
   {
     question: "Does this replace my Klaviyo templates?",
@@ -20,11 +20,11 @@ const faqs = [
   },
   {
     question: "What does 'fails closed' mean for publishing?",
-    answer: "If our Inbox Lab detects critical rendering failures for your campaign across major clients, we block publishing to Klaviyo until the issues are resolved. We believe in preventing broken emails from reaching your customers."
+    answer: "Publishing requires the current immutable release, a provider-confirmed single-recipient test, recorded evidence from Gmail, Apple Mail, and Outlook, and human approval. Missing or stale evidence blocks publication."
   },
   {
     question: "How do animations work?",
-    answer: "Our motion engine generates animated assets (like GIFs) but automatically creates a robust HTML fallback displaying a meaningful first frame for clients that block animations, ensuring your message is always delivered."
+    answer: "You upload an animated GIF and a separate meaningful first-frame asset. Pagevelope measures the GIF, enforces payload limits, and records both assets in the immutable release evidence."
   }
 ];
 
@@ -58,8 +58,8 @@ export default function FAQPage() {
 
       <section className="roadmap" style={{ paddingTop: '0', display: 'block', maxWidth: '800px', margin: '0 auto' }}>
         <div className="faqList">
-          {faqs.map((faq, index) => (
-            <div key={index} className="faqItem" style={{ marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid var(--pv-line)' }}>
+          {faqs.map((faq) => (
+            <div key={faq.question} className="faqItem" style={{ marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid var(--pv-line)' }}>
               <h3 style={{ fontSize: '20px', margin: '0 0 12px 0' }}>{faq.question}</h3>
               <p style={{ color: 'var(--pv-muted)', margin: '0', lineHeight: '1.6' }}>{faq.answer}</p>
             </div>

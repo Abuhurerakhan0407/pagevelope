@@ -23,6 +23,10 @@ values
 insert into public.brands (id, workspace_id, name, slug, created_by)
 values ('93000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'Asset Brand', 'asset-brand', '91000000-0000-4000-8000-000000000001');
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"91000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 

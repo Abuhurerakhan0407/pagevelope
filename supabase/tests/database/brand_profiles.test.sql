@@ -22,6 +22,10 @@ values
   ('41000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'owner'),
   ('42000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', 'owner');
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 

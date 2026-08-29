@@ -4,6 +4,7 @@ import { signOut } from "@/app/auth/actions";
 import { createWorkspace } from "./actions";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import { hasPaidWorkspaceAccess, type WorkspaceSubscriptionState } from "@/lib/razorpay/entitlements";
 import styles from "./dashboard.module.css";
 
 type Workspace = {
@@ -18,6 +19,8 @@ type Brand = {
   workspace_id: string;
   name: string;
 };
+
+type WorkspaceSubscription = WorkspaceSubscriptionState & { workspace_id: string };
 
 type DashboardPageProps = {
   searchParams: Promise<{ error?: string; created?: string }>;
@@ -65,13 +68,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     redirect("/auth/sign-in");
   }
 
-  const [{ data: workspaceData, error }, { data: brandData }] = await Promise.all([
+  const [{ data: workspaceData, error }, { data: brandData }, { data: subscriptionData }] = await Promise.all([
     supabase.from("workspaces").select("id,name,slug,created_at").order("created_at", { ascending: true }),
     supabase.from("brands").select("id,workspace_id,name").order("created_at", { ascending: true }),
+    supabase.from("workspace_subscriptions").select("workspace_id,tier,status,current_period_end,cancel_at_period_end"),
   ]);
 
   const workspaces = (workspaceData ?? []) as Workspace[];
   const brands = (brandData ?? []) as Brand[];
+  const subscriptions = new Map(
+    ((subscriptionData ?? []) as WorkspaceSubscription[]).map((subscription) => [subscription.workspace_id, subscription]),
+  );
   const firstBrandByWorkspace = new Map<string, Brand>();
   for (const brand of brands) {
     if (!firstBrandByWorkspace.has(brand.workspace_id)) firstBrandByWorkspace.set(brand.workspace_id, brand);
@@ -119,19 +126,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <div className={styles.grid}>
                 {workspaces.map((workspace) => {
                   const brand = firstBrandByWorkspace.get(workspace.id);
-                  const href = brand
-                    ? `/workspaces/${workspace.id}/brands/${brand.id}`
-                    : `/workspaces/${workspace.id}/brands/new`;
+                  const paid = hasPaidWorkspaceAccess(subscriptions.get(workspace.id));
+                  const href = !paid
+                    ? `/workspaces/${workspace.id}/billing`
+                    : brand
+                      ? `/workspaces/${workspace.id}/brands/${brand.id}`
+                      : `/workspaces/${workspace.id}/brands/new`;
                   return (
                     <article className={styles.card} key={workspace.id}>
                       <div className={styles.cardTop}>
                         <h2>{workspace.name}</h2>
-                        <span className={styles.badge}>Workspace</span>
+                        <span className={styles.badge}>{paid ? "Active" : "Payment required"}</span>
                       </div>
                       <p className={styles.slug}>/{workspace.slug}</p>
                       <div className={styles.cardMeta}>
                         <span>{brand ? `Brand · ${brand.name}` : "No brand configured"}</span>
-                        <Link className={styles.cardAction} href={href}>{brand ? "Open brand →" : "Set up brand →"}</Link>
+                        <Link className={styles.cardAction} href={href}>{!paid ? "Activate billing →" : brand ? "Open brand →" : "Set up brand →"}</Link>
                       </div>
                     </article>
                   );

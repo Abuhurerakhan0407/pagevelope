@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabasePublicConfig } from "@/lib/supabase/env";
 import { createBrand } from "./actions";
+import { hasPaidWorkspaceAccess } from "@/lib/razorpay/entitlements";
 import styles from "../brand.module.css";
 
 type PageProps = {
@@ -32,14 +33,20 @@ export default async function NewBrandPage({ params, searchParams }: PageProps) 
     redirect("/auth/sign-in");
   }
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id,name,slug")
-    .eq("id", workspaceId)
-    .maybeSingle();
+  const [{ data: workspace }, { data: subscription }] = await Promise.all([
+    supabase.from("workspaces").select("id,name,slug").eq("id", workspaceId).maybeSingle(),
+    supabase
+      .from("workspace_subscriptions")
+      .select("tier,status,current_period_end,cancel_at_period_end")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle(),
+  ]);
 
   if (!workspace) {
     redirect("/dashboard");
+  }
+  if (!hasPaidWorkspaceAccess(subscription)) {
+    redirect(`/workspaces/${workspaceId}/billing`);
   }
 
   const errorMessage = query.error ? errorMessages[query.error] : null;

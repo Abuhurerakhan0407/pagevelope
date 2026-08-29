@@ -44,7 +44,6 @@ export async function createWorkspace(formData: FormData) {
   }
 
   await trackServerEvent("workspace_created", { properties: { slug } });
-  await trackServerEvent("workspace_created", { properties: { slug } });
   revalidatePath("/dashboard");
   redirect("/dashboard?created=1");
 }

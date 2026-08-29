@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Templates & Examples',
-  description: 'Explore high-converting, professional email templates built for Shopify product drops, newsletters, and promotional campaigns.',
+  description: 'Explore controlled campaign starting points for Shopify product launches, collections, restocks, offers, and lifecycle reminders.',
   alternates: {
     canonical: "/templates",
   }
@@ -13,38 +13,38 @@ export default function TemplatesPage() {
   return (
     <main>
       <section className="hero">
-        <p className="eyebrow">Inspiration & Starting Points</p>
-        <h1>Start with a solid foundation.</h1>
+        <p className="eyebrow">Campaign Systems</p>
+        <h1>Start from a controlled brief.</h1>
         <p className="heroCopy">
-          Don&apos;t start from a blank canvas. Our templates are structurally sound, rigorously tested, and designed for conversion.
+          Select products, complete the brief, choose a direction, then save an immutable campaign version before release review.
         </p>
       </section>
 
       <section className="statusGrid">
         <article className="statusCard">
-          <span>E-commerce</span>
-          <strong>The Product Drop</strong>
-          <p>A highly visual, motion-first template designed to announce new collections. Features a bold hero section and elegant product grids.</p>
+          <span>Launch</span>
+          <strong>Product launch</strong>
+          <p>Build from selected Shopify or manual products with a structured goal, audience, offer, tone, and motion level.</p>
         </article>
 
         <article className="statusCard">
           <span>Editorial</span>
-          <strong>The Brand Newsletter</strong>
-          <p>Perfect for storytelling. Balances rich imagery with readable typography, ensuring your brand narrative shines through.</p>
+          <strong>Collection editorial</strong>
+          <p>Shape a collection story through one of three persisted creative directions before entering the builder.</p>
         </article>
 
         <article className="statusCard">
-          <span>Promotional</span>
-          <strong>The Flash Sale</strong>
-          <p>Urgency-driven design with clear, unambiguous calls to action. Optimized for mobile quick-taps and high conversion rates.</p>
+          <span>Lifecycle</span>
+          <strong>Restock, offer, reminder</strong>
+          <p>Use the same versioned workflow for restock waitlists, limited offers, and lifecycle reminders.</p>
         </article>
       </section>
 
       <section className="rules">
         <div style={{ textAlign: 'center' }}>
-          <h2>Customize these in the Visual Builder</h2>
+          <h2>Build a paid pilot campaign</h2>
           <div className="actions" style={{ justifyContent: 'center', marginTop: '24px' }}>
-            <Link className="primaryButton" href="/auth/sign-up">Try Templates Free</Link>
+            <Link className="primaryButton" href="/contact">Request pilot access</Link>
           </div>
         </div>
       </section>

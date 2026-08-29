@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Features',
-  description: 'Explore the professional visual builder, motion studio, Inbox Lab QA, and Klaviyo publishing tools that power Pagevelope.',
+  description: 'Explore Pagevelope visual authoring, motion evidence, inbox review, and controlled Klaviyo template publishing.',
   alternates: {
     canonical: "/features",
   }
@@ -14,9 +14,9 @@ export default function FeaturesPage() {
     <main>
       <section className="hero">
         <p className="eyebrow">Product Features</p>
-        <h1>Everything you need for perfect emails.</h1>
+        <h1>A controlled path to approved email assets.</h1>
         <p className="heroCopy">
-          Pagevelope is built to handle the complexities of modern email design, testing, and deployment.
+          Pagevelope connects structured design, release evidence, human approval, and template publishing without taking over campaign sending.
         </p>
       </section>
 
@@ -24,25 +24,25 @@ export default function FeaturesPage() {
         <article className="statusCard">
           <span>Design</span>
           <strong>Visual Builder</strong>
-          <p>A professional layer-based editor. Work visually with complete control over layout and typography. Outputs pristine, tested code automatically.</p>
+          <p>A constrained block editor backed by versioned campaign JSON and deterministic MJML-derived HTML and plain text.</p>
         </article>
 
         <article className="statusCard">
           <span>Animation</span>
           <strong>Motion Studio</strong>
-          <p>Add movement safely. Our engine ensures animated assets always fall back gracefully to a meaningful first frame for clients that don&apos;t support animation.</p>
+          <p>Upload measured animated assets with a separate meaningful first frame for clients that do not support animation.</p>
         </article>
 
         <article className="statusCard">
           <span>Quality Assurance</span>
-          <strong>Inbox Lab</strong>
-          <p>See exactly how your campaign renders across major email clients and devices before you send. No more broken layouts.</p>
+          <strong>Inbox evidence</strong>
+          <p>Attach real Gmail, Apple Mail, and Outlook evidence to the exact immutable release before approval.</p>
         </article>
 
         <article className="statusCard">
           <span>Deployment</span>
           <strong>Klaviyo Publish</strong>
-          <p>Push campaigns directly into Klaviyo with one click. We ensure all assets are optimized and HTML is minified for perfect delivery.</p>
+          <p>Publish an approved CODE template and preserve its provider receipt. Campaign configuration and sending stay in Klaviyo.</p>
         </article>
       </section>
 
@@ -50,7 +50,7 @@ export default function FeaturesPage() {
          <div>
           <h2>Ready to upgrade your workflow?</h2>
           <div className="actions" style={{ marginTop: '24px' }}>
-            <Link className="primaryButton" href="/auth/sign-up">Start Free Trial</Link>
+            <Link className="primaryButton" href="/contact">Request pilot access</Link>
           </div>
         </div>
       </section>

@@ -733,6 +733,8 @@ function CanvasBlockPreview({
         {imagesOff ? (
           <span className={styles.imageOff}>{block.imageAlt?.trim() ? `Image hidden · ${block.imageAlt}` : "Image hidden · meaningful alt text preserved"}</span>
         ) : block.imageSrc?.trim() ? (
+          // Email preview must preserve arbitrary source URLs and native image behavior.
+          // eslint-disable-next-line @next/next/no-img-element
           <img className={styles.heroImage} src={block.imageSrc} alt={block.imageAlt ?? ""} />
         ) : (
           <span className={styles.heroImage}>FEATURE</span>
@@ -750,6 +752,8 @@ function CanvasBlockPreview({
         {imagesOff ? (
           <span className={styles.imageOff}>{block.imageAlt?.trim() ? `Image hidden · ${block.imageAlt}` : block.body}</span>
         ) : block.imageSrc?.trim() ? (
+          // Email preview must preserve arbitrary source URLs and native image behavior.
+          // eslint-disable-next-line @next/next/no-img-element
           <img className={styles.standaloneImage} src={block.imageSrc} alt={block.imageAlt ?? ""} />
         ) : (
           <span className={styles.standaloneImage}>No image set</span>
@@ -770,6 +774,8 @@ function CanvasBlockPreview({
             <span className={styles.productCard} key={product.id}>
               {!imagesOff ? (
                 product.imageSrc?.trim() ? (
+                  // Email preview must preserve arbitrary source URLs and native image behavior.
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img className={styles.productImage} src={product.imageSrc} alt={product.imageAlt ?? ""} />
                 ) : (
                   <i>No image set</i>

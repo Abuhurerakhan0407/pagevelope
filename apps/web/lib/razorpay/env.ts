@@ -16,12 +16,17 @@ export function getRazorpayPublicConfig(): RazorpayPublicConfig | null {
   return { keyId };
 }
 
+export function isBillingLaunchEnabled(): boolean {
+  return process.env.BILLING_LAUNCH_ENABLED?.trim() === "true";
+}
+
 export function getRazorpayServerConfig(): RazorpayServerConfig | null {
   const keyId = process.env.RAZORPAY_KEY_ID?.trim();
+  const publicKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
   const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
 
-  if (!keyId || !keySecret || !webhookSecret) return null;
+  if (!keyId || !publicKeyId || publicKeyId !== keyId || !keySecret || !webhookSecret) return null;
 
   return { keyId, keySecret, webhookSecret };
 }

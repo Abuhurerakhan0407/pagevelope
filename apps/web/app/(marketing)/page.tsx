@@ -14,11 +14,11 @@ export default function Home() {
         <p className="eyebrow">Shopify → Pagevelope → Klaviyo</p>
         <h1>Campaign production, without inbox roulette.</h1>
         <p className="heroCopy">
-          Build studio-grade email campaigns for your Shopify brand with safe motion, real inbox testing, client approval,
+          Build studio-grade email campaigns for your Shopify brand with safe motion, structured inbox evidence, client approval,
           and traceable publishing direct to Klaviyo. Designed for email designers, agencies, and elite ecommerce teams.
         </p>
         <div className="actions">
-          <Link className="primaryButton" href="/auth/sign-up">Start designing for free</Link>
+          <Link className="primaryButton" href="/auth/sign-up">Create account</Link>
           <Link className="secondaryButton" href="/features">Explore features</Link>
         </div>
       </section>
@@ -36,8 +36,8 @@ export default function Home() {
         </article>
         <article className="statusCard">
           <span>Publish confidently</span>
-          <strong>Inbox Lab & Approvals</strong>
-          <p>Visual testing across major clients. Approvals attach to immutable versions. Publishing to Klaviyo fails closed if blocking QA issues remain.</p>
+          <strong>Inbox evidence & approvals</strong>
+          <p>Record real Gmail, Apple Mail, and Outlook evidence. Approvals attach to immutable versions. Klaviyo publishing fails closed when release gates remain.</p>
         </article>
       </section>
 
