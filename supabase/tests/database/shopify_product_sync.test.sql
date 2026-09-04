@@ -27,6 +27,10 @@ values
   ('91100000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001', 'Shopify Brand A', 'shopify-brand-a', '90000000-0000-4000-8000-000000000001'),
   ('92100000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'Shopify Brand B', 'shopify-brand-b', '90000000-0000-4000-8000-000000000002');
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"90000000-0000-4000-8000-000000000001"}', true);
 set local role authenticated;
 

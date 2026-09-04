@@ -20,7 +20,7 @@ export default function MarketingLayout({ children }: Readonly<{ children: React
         </nav>
         <div className="navActions">
           <Link href="/auth/sign-in" className="textLink">Log in</Link>
-          <Link href="/auth/sign-up" className="primaryButton">Start Free</Link>
+          <Link href="/auth/sign-up" className="primaryButton">Create account</Link>
         </div>
       </header>
 

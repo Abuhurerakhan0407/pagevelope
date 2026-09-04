@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["mjml"],
   transpilePackages: [
     "@pagevelope/editor-schema",
     "@pagevelope/email-components",

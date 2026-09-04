@@ -235,7 +235,6 @@ export async function sendTestEmailAction(
 
   revalidatePath(`/review/${candidateId}`);
   await trackServerEvent("test_send_success", { workspaceId, properties: { candidateId } });
-  await trackServerEvent("test_send_success", { workspaceId, properties: { candidateId } });
   redirect(`${path}&saved=test-send`);
 }
 

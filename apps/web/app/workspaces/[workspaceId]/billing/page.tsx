@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getRazorpayServerConfig } from "@/lib/razorpay/env";
+import { getRazorpayServerConfig, isBillingLaunchEnabled } from "@/lib/razorpay/env";
 import { BillingClient } from "./billing-client";
 
 export default async function BillingPage({
@@ -24,7 +24,7 @@ export default async function BillingPage({
     .single();
 
   if (!membership || !["owner", "admin"].includes(membership.role)) {
-    redirect(`/workspaces/${workspaceId}`);
+    redirect("/dashboard");
   }
 
   const { data: subscription } = await supabase
@@ -40,6 +40,7 @@ export default async function BillingPage({
         workspaceId={workspaceId}
         subscription={subscription}
         billingConfigured={Boolean(getRazorpayServerConfig())}
+        checkoutEnabled={isBillingLaunchEnabled() && Boolean(getRazorpayServerConfig())}
       />
     </div>
   );

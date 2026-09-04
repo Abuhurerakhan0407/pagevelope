@@ -127,7 +127,7 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
   } catch (error) {
-    await trackServerEvent("publish_failed", { workspaceId, userId, properties: { provider: "klaviyo", error: error instanceof Error ? error.message : "Klaviyo template publishing failed." } });
+    await trackServerEvent("publish_failed", { workspaceId, properties: { provider: "klaviyo", error: error instanceof Error ? error.message : "Klaviyo template publishing failed." } });
     return NextResponse.json({
       error: error instanceof Error ? error.message : "Klaviyo template publishing failed.",
       code: "KLAVIYO_PUBLISH_FAILED",
@@ -150,7 +150,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Klaviyo was updated, but the immutable publish receipt could not be recorded. Do not retry blindly.", code: "RECEIPT_WRITE_FAILED" }, { status: 500 });
   }
 
-  await trackServerEvent("publish_success", { workspaceId, userId, properties: { provider: "klaviyo", templateId: template.templateId, campaignId: campaign.id } });
+  await trackServerEvent("publish_success", { workspaceId, properties: { provider: "klaviyo", templateId: template.templateId, campaignId: campaign.id } });
   return NextResponse.json({
     receiptId,
     campaignId: campaign.id,

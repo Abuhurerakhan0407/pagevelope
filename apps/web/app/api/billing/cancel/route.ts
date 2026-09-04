@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay/client";
 import { getRazorpayServerConfig } from "@/lib/razorpay/env";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
@@ -25,36 +26,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    if (!serviceRoleKey) {
+      return NextResponse.json({ error: "Billing administration is not configured." }, { status: 503 });
+    }
+
     // Verify user is admin of workspace
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from("workspace_memberships")
       .select("role")
       .eq("workspace_id", workspaceId)
       .eq("user_id", user.id)
       .single();
 
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
+    if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { data: subscription } = await supabase
+    const { data: subscription, error: subscriptionError } = await supabase
       .from("workspace_subscriptions")
       .select("razorpay_subscription_id")
       .eq("workspace_id", workspaceId)
       .single();
 
-    if (!subscription || !subscription.razorpay_subscription_id) {
+    if (subscriptionError || !subscription || !subscription.razorpay_subscription_id) {
       return NextResponse.json({ error: "No active subscription" }, { status: 400 });
     }
 
     // Cancel at period end
-    await getRazorpayClient().subscriptions.cancel(subscription.razorpay_subscription_id, false);
+    await getRazorpayClient().subscriptions.cancel(subscription.razorpay_subscription_id, true);
 
-    // We'll let the webhook update the DB, or we can eagerly update it here
-    await supabase
+    const admin = createAdminClient(serviceRoleKey);
+    const { error: updateError } = await admin
       .from("workspace_subscriptions")
-      .update({ cancel_at_period_end: true })
+      .update({ cancel_at_period_end: true, updated_at: new Date().toISOString() })
       .eq("workspace_id", workspaceId);
+    if (updateError) throw updateError;
 
     return NextResponse.json({ success: true });
   } catch (error) {

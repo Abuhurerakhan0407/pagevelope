@@ -49,6 +49,10 @@ create temporary table release_test_state (candidate_id uuid, attempt_id uuid);
 insert into release_test_state default values;
 grant select, update on release_test_state to authenticated, service_role;
 
+-- Historical workflow tests exercise paid workspace capabilities.
+update public.workspace_subscriptions
+set tier = 'pro', status = 'active', current_period_end = now() + interval '30 days';
+
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"80000000-0000-4000-8000-000000000002"}', true);
 set local role authenticated;
 

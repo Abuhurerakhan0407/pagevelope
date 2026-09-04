@@ -76,7 +76,6 @@ export async function createBrand(workspaceId: string, formData: FormData) {
   }
 
   await trackServerEvent("brand_created", { workspaceId, properties: { brandId: data } });
-  await trackServerEvent("brand_created", { workspaceId, properties: { brandId: data } });
   revalidatePath("/dashboard");
   redirect(`/workspaces/${workspaceId}/brands/${String(data)}?created=1`);
 }
